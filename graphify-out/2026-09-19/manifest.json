@@ -1,0 +1,20 @@
+{
+  "knowledge_base/.library_manifest.json": {
+    "mtime": 1789802726.4311616,
+    "seen": 1789802734.9909797,
+    "ast_hash": "65b3130da312d6e25cff709b4b35e58d",
+    "semantic_hash": "65b3130da312d6e25cff709b4b35e58d"
+  },
+  "medium_archiver.py": {
+    "mtime": 1789802474.2881374,
+    "seen": 1789802734.9909828,
+    "ast_hash": "78f2fc90b608431d9e100ff5b673726e",
+    "semantic_hash": "78f2fc90b608431d9e100ff5b673726e"
+  },
+  "server.py": {
+    "mtime": 1789798534.9256656,
+    "seen": 1789798632.4450505,
+    "ast_hash": "8bad6f26c74f28d7cf41a8b19bacae0f",
+    "semantic_hash": "8bad6f26c74f28d7cf41a8b19bacae0f"
+  }
+}

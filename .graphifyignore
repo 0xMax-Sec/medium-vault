@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+medium-scraper/
+MediumScraper/
+knowledge_base/**/images/
+**/images/**
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+.download_state.json
+*.tmp

@@ -1,0 +1,12 @@
+{
+  "medium-knowledge-base": {
+    "command": "/home/max/Projects/Bug-bounty/mediumm/.venv/bin/python",
+    "args": [
+      "/home/max/Projects/Bug-bounty/mediumm/server.py"
+    ],
+    "env": {
+      "PYTHONUNBUFFERED": "1",
+      "MEDIUM_KNOWLEDGE_BASE": "/home/max/Projects/Bug-bounty/mediumm/knowledge_base"
+    }
+  }
+}

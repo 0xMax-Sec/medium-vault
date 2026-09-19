@@ -1,0 +1,241 @@
+# 📖 Especificación Técnica y Arquitectura del Sistema (Medium Knowledge Base)
+
+> **Documento de Ingeniería y Manual de Arquitectura Interna**  
+> Proyecto: `medium_archiver` & `medium-knowledge-base` MCP Server  
+> Fecha de actualización: 19 de Septiembre de 2026
+
+---
+
+## 1. Visión General del Sistema
+
+El ecosistema **Medium Knowledge Base** está compuesto por tres subsistemas principales que operan de forma coordinada:
+
+```
+                                  ┌────────────────────────┐
+                                  │      Medium.com /      │
+                                  │  Freedium Mirror CFD   │
+                                  └───────────┬────────────┘
+                                              │ HTTP / Scraping
+                                              ▼
+┌───────────────────────┐         ┌────────────────────────┐
+│ Agentes de IA / LLMs  │         │   Motor de Archivo     │
+│ (Claude Code, Oz,     │◄───────►│  (medium_archiver.py)  │
+│ Antigravity, Cursor)  │         │                        │
+└───────────┬───────────┘         └───────────┬────────────┘
+            │ stdio / JSON-RPC                │ I/O Local
+            ▼                                 ▼
+┌───────────────────────┐         ┌────────────────────────┐
+│  Servidor MCP stdio   │◄───────►│    Base Offline de     │
+│      (server.py)      │         │   Conocimiento (.md)   │
+└───────────────────────┘         └────────────────────────┘
+```
+
+1. **Motor de Descubrimiento y Extracción (`medium_archiver.py`):**
+   - Rastreo mensual de archivos estáticos (2024–2026).
+   - Deduplicación previa a la red en 3 niveles.
+   - Saneamiento del DOM, filtrado de ruido, descarga concurrente de imágenes en alta resolución.
+   - Generación de Markdown estructurado con YAML frontmatter.
+2. **Motor de Auditoría y Control de Calidad (`--audit` / `--clean-markdown`):**
+   - Eliminación de bloques de código Shiki duplicados generados por temas oscuros/claros simultáneos.
+   - Reversión determinista de Mojibake UTF-8 (corrupciones de `ISO-8859-1`).
+   - Clasificación sintáctica de bloques de código (`bash`, `http`, `json`, `sql`, `javascript`, `python`, `text`).
+3. **Capa de Exposición Multi-Harness (`server.py` & `SKILL.md`):**
+   - Servidor MCP basado en el estándar `stdio` compatible con cualquier harness o IDE moderno.
+   - Acceso sin latencia de red a más de 1,275 writeups y 6,300 imágenes HD.
+
+---
+
+## 2. Subsistema de Descubrimiento de Archivos
+
+### 2.1 Limitación de los Feeds RSS y Solución Recursiva
+Medium limita sus feeds RSS (`https://medium.com/feed/tag/<topic>`) a un máximo de **10 artículos recientes**, lo que impide construir una base de conocimiento histórica.
+
+Para superar esto, `MediumFeedDiscoverer` implementa un algoritmo de doble fase:
+
+```mermaid
+graph TD
+    Start(["Inicio de Descubrimiento"]) --> Choice{"Modo de Extracción"}
+    Choice -->|--feed-only| RSSFetch["Feed RSS (Capped 10 items)"]
+    Choice -->|Default / --archive| ArchFetch["Scraper Mensual 2024-2026"]
+    
+    subgraph ArchLoop ["Bucle de Archivo Mensual"]
+        ArchFetch --> GenUrls["Generar URLs: medium.com/tag/<topic>/archive/<year>/<month>"]
+        GenUrls --> HttpGet["Petición HTTP con Desktop User-Agent"]
+        HttpGet --> DomParse["Parseo DOM: divs con clase 'postArticle' o enlaces '/p/'"]
+        DomParse --> ExtractMeta["Extracción: Título, Autor, Fecha, Post Hash"]
+    end
+    
+    ExtractMeta --> DedupFilter{"¿Existe en Manifiesto?"}
+    DedupFilter -->|Sí| MarkCached["Marcar como already_archived: True"]
+    DedupFilter -->|No| QueueDownload["Agregar a Cola de Descargas"]
+```
+
+### 2.2 Normalización de URLs y Alias de Seguridad
+`MediumFeedDiscoverer.normalize_topic()` implementa un diccionario de alias para mapear siglas comunes de bug bounty a sus tags oficiales en Medium:
+
+- `cspt` $\to$ `client-side-path-traversal`
+- `idor` $\to$ `insecure-direct-object-reference`
+- `ssrf` $\to$ `server-side-request-forgery`
+- `rce` $\to$ `remote-code-execution`
+- `ato` $\to$ `account-takeover`
+- `xss` $\to$ `cross-site-scripting`
+- `csrf` $\to$ `cross-site-request-forgery`
+
+---
+
+## 3. Motor de Deduplicación en 3 Niveles
+
+Para garantizar que un artículo no se descargue dos veces (incluso si se indexa en múltiples categorías o con parámetros de campaña disímiles), `LibraryManager` mantiene un índice en memoria sincronizado con `.library_manifest.json`:
+
+```mermaid
+flowchart TD
+    CandidateURL["Artículo Candidato Descubierto"] --> HashExtract["1. Extracción de Post ID Hash (-[a-f0-9]{8,16})"]
+    HashExtract --> HashCheck{"¿Hash en entries?"}
+    HashCheck -->|Coincide| Skip1["Omitir Descarga (Ya en Biblioteca)"]
+    
+    HashCheck -->|No| URLSanitize["2. Saneamiento de URL (Eliminar utm_*, source, sk)"]
+    URLSanitize --> URLCheck{"¿URL Limpia en url_map?"}
+    URLCheck -->|Coincide| Skip2["Omitir Descarga (Mismo recurso)"]
+    
+    URLCheck -->|No| TitleNormalize["3. Normalización de Título (Lowercase, no signos)"]
+    TitleNormalize --> TitleCheck{"¿Título en title_map?"}
+    TitleCheck -->|Coincide| Skip3["Omitir Descarga (Título idéntico)"]
+    
+    TitleCheck -->|No| Proceed["Descargar y Archivar"]
+```
+
+### Estructura de Registro en `.library_manifest.json`
+
+```json
+{
+  "title": "AI Didn’t Kill Manual Testing. Triage Bills Did.",
+  "author": "Raj Namdev",
+  "published": "2026-09-19",
+  "source_url": "https://rajnamdev.medium.com/ai-didnt-kill-manual-testing-triage-bills-did-6059344032d4",
+  "clean_url": "https://rajnamdev.medium.com/ai-didnt-kill-manual-testing-triage-bills-did-6059344032d4",
+  "post_hash": "6059344032d4",
+  "topic": "bug-bounty",
+  "folder_rel_path": "bug-bounty/AI Didn’t Kill Manual Testing. Triage Bills Did",
+  "retrieved_at": "2026-09-19T05:25:13Z",
+  "file_size_kb": 11.95,
+  "images_count": 1
+}
+```
+
+---
+
+## 4. Pipeline de Saneamiento y Calidad Markdown
+
+El procesamiento del contenido convierte el HTML sucio en Markdown compatible con LLMs mediante 5 etapas consecutivas:
+
+```
+[HTML Crudo] ──► (1. Forzar UTF-8)
+             ──► (2. Descomponer Shiki Dark & UI Residual)
+             ──► (3. Descargar Imágenes HD a ./images/)
+             ──► (4. Conversión DOM a GFM vía markdownify)
+             ──► (5. Post-Procesamiento: Mojibake + Deduplicación + Sintaxis) ──► [article.md]
+```
+
+### 4.1 Reversión de Mojibake UTF-8
+Cuando los mirrors web no envían el parámetro `charset=utf-8` en la cabecera `Content-Type`, las bibliotecas HTTP asumen `ISO-8859-1` según la RFC 2616. Esto provoca que los bytes UTF-8 se decodifiquen erróneamente en secuencias de caracteres Latin-1.
+
+La función `fix_mojibake(text)` utiliza la siguiente heurística de expresiones regulares:
+```python
+pattern = re.compile(r'[\xc2-\xf4][\x80-\xbf]{1,3}')
+```
+Al encontrar secuencias de 2 a 4 bytes que corresponden exactamente a patrones UTF-8 válidos decodificados como Latin-1, invoca `raw.encode('latin1').decode('utf-8')`.
+
+### 4.2 Deduplicación de Bloques de Código Consecutivos
+El resaltador de sintaxis Shiki genera dos bloques `<pre>` paralelos para soportar modo oscuro y claro dinámico en CSS:
+- `<pre class="shiki github-light">`
+- `<pre class="shiki github-dark">`
+
+El motor de saneamiento elimina de raíz cualquier nodo con clases `github-dark` o `dark:block`. Adicionalmente, `clean_markdown_document()` realiza un barrido por líneas: si dos bloques contiguos de código delimitados por triple comilla invertida (` ``` `) poseen contenido idéntico (ignorando espacios en blanco intermedios), el segundo se suprime por completo.
+
+### 4.3 Clasificación Inteligente de Sintaxis
+Para evitar que comandos de terminal o peticiones HTTP se marquen erróneamente como Python:
+- **`bash`:** Detecta comandos (`curl`, `git`, `docker`, `subfinder`, `nuclei`, `httpx`, `ffuf`, `dirsearch`, `sqlmap`, `chmod`, `export`, etc.), `#!/bin/bash` o prefijos de prompt (`$ `, `# `).
+- **`http`:** Detecta métodos HTTP (`GET /`, `POST /`, `PUT /`, etc.) o cabeceras de respuesta (`HTTP/1.1`, `HTTP/2`).
+- **`json`:** Valida sintaxis JSON balanceada (`{...}` o `[...]`).
+- **`sql`:** Detecta sentencias SQL (`SELECT`, `UNION SELECT`, `INSERT INTO`, etc.).
+- **`javascript`:** Detecta funciones flecha, `console.log`, `document.getElementById`, `fetch(`, `require(`.
+- **`python`:** Detecta `import`, `def ...:`, `class ...:`, `if __name__ == '__main__':`.
+- **`text`:** Texto sin adornos sintácticos engañosos para salidas de terminal, tablas o diagramas ASCII.
+
+---
+
+## 5. Resiliencia de Red y Concurrencia
+
+### 5.1 Rotación de Espejos y Circuit Breaker
+En `WebReaderClient`:
+- Mantiene una lista rotativa de espejos configurables (`DEFAULT_READERS`).
+- Si un mirror responde con HTTP 502, 503, 504 o experimenta un fallo de resolución DNS (`NameResolutionError`), se activa un **Circuit Breaker** que marca el dominio como no saludable durante 120 a 600 segundos, redirigiendo el tráfico a los mirrors restantes o a Medium directo.
+- Las solicitudes fallidas se reintentan con **Backoff Exponencial con Jitter**:
+  $$\text{delay} = 1.2^{\text{attempt}} + \text{random}(0.1, 0.3)$$
+
+### 5.2 Manejador de Estado Persistente (`DownloadStateManager`)
+Durante descargas masivas concurrentes, se genera un archivo `.download_state.json` en la carpeta del tópico:
+- Registra el total de artículos planificados, completados y pendientes.
+- Si el proceso se interrumpe (interrupción voluntaria o fallo de red), al relanzar el comando con el mismo tag el sistema detecta la sesión inconclusa y reanuda inmediatamente el trabajo pendiente sin volver a descargar los artículos ya finalizados.
+
+---
+
+## 6. Servidor MCP (`server.py`) y Transporte `stdio`
+
+El servidor implementa el protocolo MCP estándar para dotar a los agentes de capacidades offline:
+
+### Esquema de Herramientas
+
+```json
+{
+  "tools": [
+    {
+      "name": "medium_search_articles",
+      "description": "Busca writeups offline por término clave, vulnerabilidad o autor.",
+      "parameters": {
+        "query": {"type": "string", "description": "Término de búsqueda"},
+        "topic": {"type": "string", "description": "Filtrar por tópico opcional"},
+        "limit": {"type": "integer", "default": 10}
+      }
+    },
+    {
+      "name": "medium_get_article",
+      "description": "Recupera el texto Markdown completo y metadatos de un artículo.",
+      "parameters": {
+        "identifier": {"type": "string", "description": "Hash del post, título o ruta"}
+      }
+    },
+    {
+      "name": "medium_get_stats",
+      "description": "Devuelve estadísticas globales de la biblioteca."
+    },
+    {
+      "name": "medium_archive_url",
+      "description": "Descarga y procesa una URL de Medium bajo demanda."
+    },
+    {
+      "name": "medium_export_archive",
+      "description": "Genera un archivo zip comprimido (/archivefile)."
+    }
+  ]
+}
+```
+
+---
+
+## 7. Mapeo de Arquitectura y Grafo de Conocimiento (Graphify)
+
+El repositorio se encuentra indexado en `graphify-out/`:
+
+- **Hubs de Comunidad:**
+  - `LibraryManager`: 16 aristas (Nodo central de indexación y deduplicación).
+  - `DownloadStateManager`: 13 aristas (Gestión de estado y checkpointing).
+  - `MediumFeedDiscoverer`: 12 aristas (Rastreo RSS y scraping mensual).
+  - `WebReaderClient`: 10 aristas (HTTP, rotación de mirrors y circuit breakers).
+  - `DOMSanitizerAndAssetBundler`: 8 aristas (Saneamiento DOM, bundling de imágenes HD).
+  - `clean_markdown_document`: Nodo núcleo de calidad, mojibake e inferencia sintáctica.
+- **Visualizaciones Disponibles:**
+  - `graph.html`: Grafo de fuerzas interactivo D3.
+  - `GRAPH_TREE.html`: Árbol colapsable por jerarquías de componentes.
+  - `mediumm-callflow.html`: Secuencias de llamadas e invocaciones entre clases.
+  - `GRAPH_REPORT.md`: Auditoría de acoplamiento y god-nodes.

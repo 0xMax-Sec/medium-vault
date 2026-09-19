@@ -1,0 +1,23 @@
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Scraped offline knowledge base and exports (stored on local disk, not in git)
+knowledge_base/
+*.zip
+exports/
+
+# Reference repos
+medium-scraper/
+MediumScraper/
+
+# Runtime states
+.download_state.json
+*.tmp
+*.log

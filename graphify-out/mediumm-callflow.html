@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mediumm — Complete Call Flow &amp; Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+:root {
+  --bg: #0f172a; --surface: #1e293b; --border: #334155;
+  --text: #e2e8f0; --muted: #94a3b8; --accent: #38bdf8;
+  --warn: #fbbf24; --err: #f87171; --ok: #34d399;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+.container { max-width: 1200px; margin: 0 auto; padding: 40px 24px; }
+h1 { font-size: 2.4rem; margin-bottom: 8px; background: linear-gradient(135deg, var(--accent), #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { font-size: 1.7rem; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+h3 { font-size: 1.25rem; margin: 32px 0 12px; color: var(--accent); }
+h4 { font-size: 1.05rem; margin: 20px 0 8px; color: var(--warn); }
+p { margin: 8px 0; color: var(--muted); }
+.subtitle { color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; }
+.mermaid { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 20px 0; overflow-x: auto; position: relative; }
+.mermaid.is-enhanced { padding: 0; overflow: hidden; min-height: 260px; }
+.mermaid-viewport { padding: 54px 24px 24px; overflow: hidden; cursor: grab; touch-action: none; min-height: 260px; }
+.mermaid-viewport.is-dragging { cursor: grabbing; }
+.mermaid-viewport svg { max-width: none !important; height: auto; transform-origin: 0 0; transition: transform 120ms ease; }
+.mermaid-toolbar { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; align-items: center; gap: 6px; padding: 6px; background: rgba(15,23,42,0.92); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.28); }
+.mermaid-toolbar button, .mermaid-toolbar .zoom-level { height: 28px; min-width: 32px; border: 1px solid var(--border); border-radius: 6px; background: #1e293b; color: var(--text); font: 600 0.78rem system-ui, sans-serif; display: inline-flex; align-items: center; justify-content: center; }
+.mermaid-toolbar button { cursor: pointer; }
+.mermaid-toolbar button:hover { border-color: var(--accent); color: var(--accent); }
+.mermaid-toolbar .zoom-level { min-width: 52px; color: var(--muted); background: transparent; }
+.call-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.92rem; }
+.call-table th { background: #1a2744; color: var(--accent); text-align: left; padding: 10px 14px; border: 1px solid var(--border); }
+.call-table td { padding: 8px 14px; border: 1px solid var(--border); vertical-align: top; }
+.call-table tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+.tag-async { background: #7c3aed33; color: #a78bfa; }
+.tag-class { background: #05966933; color: var(--ok); }
+.tag-func { background: #2563eb33; color: var(--accent); }
+.tag-cmd { background: #d9770633; color: var(--warn); }
+.tag-endpoint { background: #dc262633; color: var(--err); }
+.tag-hook { background: #db277733; color: #f472b6; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin: 16px 0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin: 16px 0; }
+.arrow-chain { font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--accent); padding: 10px; background: rgba(56,189,248,0.06); border-radius: 6px; }
+code { font-family: 'Fira Code', 'Cascadia Code', monospace; background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 3px; font-size: 0.88em; }
+ul, ol { margin: 8px 0 8px 24px; color: var(--muted); }
+li { margin: 4px 0; }
+a { color: var(--accent); }
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+.nav { position: sticky; top: 0; background: var(--bg); z-index: 10; padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9rem; }
+.nav a { text-decoration: none; }
+.nav a:hover { text-decoration: underline; }
+@media (max-width: 768px) { .container { padding: 16px; } h1 { font-size: 1.8rem; } }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>mediumm — Complete Call Flow &amp; Architecture Documentation</h1>
+<p class="subtitle">Generated from graphify knowledge graph: 114 nodes, 190 edges, 7 communities. Commit: unknown</p>
+
+<div class="nav">
+    <a href="#overview">Architecture Overview</a>
+    <a href="#outputs-docs">Outputs &amp; Docs</a>
+    <a href="#ingest-cache-update">Ingestion &amp; Updates</a>
+    <a href="#serve-api">Serving API</a>
+    <a href="#medium-archiverpy-get">Medium Archiverpy Get</a>
+</div>
+
+<!-- ====== Architecture Overview ====== -->
+<h2 id="overview">1. Architecture Overview</h2>
+
+<div class="mermaid">
+
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>20 nodes</small>")
+    class OUTPUTS_DOCS_ED82387C module;
+    INGEST_CACHE_UPDATE_FF457338("Ingestion &amp; Updates<br/><small>70 nodes</small>")
+    class INGEST_CACHE_UPDATE_FF457338 module;
+    SERVE_API_35EC8E86("Serving API<br/><small>12 nodes</small>")
+    class SERVE_API_35EC8E86 module;
+    MEDIUM_ARCHIVERPY_GET_F2177973("Medium Archiverpy Get<br/><small>12 nodes</small>")
+    class MEDIUM_ARCHIVERPY_GET_F2177973 module;
+    OUTPUTS_DOCS_ED82387C -->|contains x10| INGEST_CACHE_UPDATE_FF457338
+    INGEST_CACHE_UPDATE_FF457338 -->|references x5| OUTPUTS_DOCS_ED82387C
+    SERVE_API_35EC8E86 -->|imports x4| OUTPUTS_DOCS_ED82387C
+    SERVE_API_35EC8E86 -->|imports x4| INGEST_CACHE_UPDATE_FF457338
+    OUTPUTS_DOCS_ED82387C -->|calls x2| MEDIUM_ARCHIVERPY_GET_F2177973
+    INGEST_CACHE_UPDATE_FF457338 -->|references| SERVE_API_35EC8E86
+    MEDIUM_ARCHIVERPY_GET_F2177973 -->|references| OUTPUTS_DOCS_ED82387C
+    MEDIUM_ARCHIVERPY_GET_F2177973 -->|references| INGEST_CACHE_UPDATE_FF457338
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h4>Architecture Layers</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
+      <tr><td>Outputs &amp; Docs</td><td>20</td><td><code>1</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>70</td><td><code>0, 2, 3, 4</code></td></tr><tr><td>Serving API</td><td>12</td><td><code>6</code></td></tr><tr><td>Medium Archiverpy Get</td><td>12</td><td><code>5</code></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Core Flow</h4>
+    <div class="arrow-chain">Serving API -&gt; Outputs &amp; Docs -&gt; Ingestion &amp; Updates -&gt; Medium Archiverpy Get</div>
+  </div>
+</div>
+<hr>
+<!-- ====== 2. Outputs & Docs ====== -->
+<h2 id="outputs-docs">2. Outputs &amp; Docs</h2>
+<p>Outputs &amp; Docs groups implementation around medium, archiverpy, directory, archive, mostly in medium_archiver.py. This section covers 20 nodes and 28 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Outputs &amp; Docs (20 nodes, 28 edges)
+    subgraph outputs_docs_medium_archiver_py_844afa65["medium_archiver.py"]
+        medium_archiver_main_fe6993f3("main()<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumarchiver_b5ba7138("MediumArchiver<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumarchiver_archive_article_15cfee5a("archive_article()<br/><small>medium_archiver.py</small>")
+        medium_archiver_pathsanitizer_89fa3170("PathSanitizer<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumarchiver_run_96af6c14("run()<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumarchiver_generate_frontmat_39fb99c9("generate_frontmatter()<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumarchiver_render_directory_0fc5f188("render_directory_tree()<br/><small>medium_archiver.py</small>")
+        medium_archiver_pathsanitizer_sanitize_4acba152("sanitize()<br/><small>medium_archiver.py</small>")
+        medium_archiver_parse_arguments_82537464("parse_arguments()<br/><small>medium_archiver.py</small>")
+        medium_archiver_74596830("medium_archiver.py")
+        medium_archiver_rationale_1457_88c6f96f("Archive a single article into topic_dir.<br/><small>medium_archiver.py</small>")
+        medium_archiver_rationale_1817_989369b9("Configure and parse CLI flags.<br/><small>medium_archiver.py</small>")
+        medium_archiver_rationale_1404_d93179a0("Coordinates discovery, extraction, asse...<br/><small>medium_archiver.py</small>")
+        medium_archiver_rationale_1441_e89a4111("Create standard YAML frontmatter block...<br/><small>medium_archiver.py</small>")
+        medium_archiver_rationale_1519_8c7a062e("Execute the complete discovery and arch...<br/><small>medium_archiver.py</small>")
+        medium_archiver_rationale_376_b2f31a0d("Provides cross-platform filesystem path...<br/><small>medium_archiver.py</small>")
+    end
+    subgraph outputs_docs_External_generated_a8e9d6d8["External / generated"]
+        path_3150ecd5("Path")
+        namespace_1963ebc6("Namespace")
+    end
+    medium_archiver_mediumarchiver_b5ba7138 -->|method| medium_archiver_mediumarchiver_generate_frontmat_39fb99c9
+    medium_archiver_mediumarchiver_b5ba7138 -->|method| medium_archiver_mediumarchiver_archive_article_15cfee5a
+    medium_archiver_mediumarchiver_b5ba7138 -->|method| medium_archiver_mediumarchiver_run_96af6c14
+    medium_archiver_mediumarchiver_b5ba7138 -->|method| medium_archiver_mediumarchiver_render_directory_0fc5f188
+    medium_archiver_pathsanitizer_89fa3170 -->|method| medium_archiver_pathsanitizer_sanitize_4acba152
+    medium_archiver_main_fe6993f3 -->|calls| medium_archiver_parse_arguments_82537464
+    medium_archiver_main_fe6993f3 -->|calls| medium_archiver_mediumarchiver_b5ba7138
+    medium_archiver_main_fe6993f3 -->|calls| path_3150ecd5
+    medium_archiver_main_fe6993f3 -->|calls| medium_archiver_pathsanitizer_sanitize_4acba152
+    medium_archiver_mediumarchiver_archive_article_15cfee5a -->|calls| medium_archiver_pathsanitizer_sanitize_4acba152
+    medium_archiver_mediumarchiver_archive_article_15cfee5a -->|calls| medium_archiver_mediumarchiver_generate_frontmat_39fb99c9
+    medium_archiver_mediumarchiver_run_96af6c14 -->|calls| medium_archiver_pathsanitizer_sanitize_4acba152
+    %% Omitted for readability: 2 nodes, 0 edges
+    class medium_archiver_main_fe6993f3 function;
+    class medium_archiver_mediumarchiver_b5ba7138 klass;
+    class medium_archiver_mediumarchiver_archive_article_15cfee5a function;
+    class medium_archiver_pathsanitizer_89fa3170 klass;
+    class medium_archiver_mediumarchiver_run_96af6c14 function;
+    class medium_archiver_mediumarchiver_generate_frontmat_39fb99c9 function;
+    class medium_archiver_mediumarchiver_render_directory_0fc5f188 function;
+    class medium_archiver_pathsanitizer_sanitize_4acba152 function;
+    class medium_archiver_parse_arguments_82537464 function;
+    class medium_archiver_74596830 module;
+    class medium_archiver_rationale_1457_88c6f96f concept;
+    class medium_archiver_rationale_1817_989369b9 concept;
+    class medium_archiver_rationale_1404_d93179a0 concept;
+    class medium_archiver_rationale_1441_e89a4111 concept;
+    class medium_archiver_rationale_1519_8c7a062e concept;
+    class medium_archiver_rationale_376_b2f31a0d concept;
+    class path_3150ecd5 klass;
+    class namespace_1963ebc6 klass;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>main()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>server.py</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>archive_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>generate_frontmatter()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+2 more</td>
+  <td>MediumArchiver node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>PathSanitizer</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>server.py</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><code>sanitize()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>PathSanitizer node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>Console</code><br><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>parse_arguments()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+2 more</td>
+  <td>main() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.archive_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>generate_frontmatter()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>sanitize()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.archive_article() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.generate_frontmatter()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>archive_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.generate_frontmatter() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>.render_directory_tree()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.render_directory_tree() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.run()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>sanitize()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.run() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>parse_arguments()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>main()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>parse_arguments() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>.sanitize()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>archive_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>main()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>PathSanitizer</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>.sanitize() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>medium_archiver.py</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td><code>server.py</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>Module file in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>Namespace</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Namespace node in project.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>Path</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>main()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>medium_export_archive()</code><br><small style="color:var(--muted)">server.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>Path node in project.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>Coordinates discovery, extraction, asset management, and Markdown creation.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Coordinates discovery, extraction, asset management, and Markdown creation..</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>Create standard YAML frontmatter block for Obsidian and Local RAG.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Create standard YAML frontmatter block for Obsidian and Local RAG..</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>Archive a single article into topic_dir.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Archive a single article into topic_dir..</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>Execute the complete discovery and archiving workflow for a tag or publication.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Execute the complete discovery and archiving workflow for a tag or publication..</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>Render a visual directory tree of the generated knowledge base.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Render a visual directory tree of the generated knowledge base..</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>Configure and parse CLI flags.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Configure and parse CLI flags..</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>Provides cross-platform filesystem path sanitization.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Provides cross-platform filesystem path sanitization..</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>Sanitize a string for safe usage as a directory or file name across Windows,…</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Sanitize a string for safe usage as a directory or file name across Windows,….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>medium_archiver.py</code></td><td>18 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: explains x8, calls x7, method x5, references x4. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 3. Ingestion & Updates ====== -->
+<h2 id="ingest-cache-update">3. Ingestion &amp; Updates</h2>
+<p>Ingestion &amp; Updates groups implementation around medium, archiverpy, url, article, mostly in medium_archiver.py, server.py. This section covers 70 nodes and 105 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Ingestion &amp; Updates (70 nodes, 105 edges)
+    subgraph ingest_cache_update_medium_archiver_py_1cc8d0c1["medium_archiver.py"]
+        medium_archiver_librarymanager_31cc094a("LibraryManager<br/><small>medium_archiver.py</small>")
+        medium_archiver_webreaderclient_4d1d2dca("WebReaderClient<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumarchiver_init_e7faa508("__init__()<br/><small>medium_archiver.py</small>")
+        medium_archiver_mediumfeeddiscoverer_0e2ecead("MediumFeedDiscoverer<br/><small>medium_archiver.py</small>")
+        medium_archiver_domsanitizerandassetbundler_467940b4("DOMSanitizerAndAssetBundler<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_init_60ac707d("__init__()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_extract_post_hash_52f6c3f1("extract_post_hash()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_normalize_title_996bbe72("normalize_title()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_load_or_rebuild_c3cc867d("load_or_rebuild()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_save_manifest_0db6971d("save_manifest()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_check_archived_37e94cc2("check_archived()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_register_article_a83ade53("register_article()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_search_fa490199("search()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_render_search_res_cfe52e04("render_search_results()<br/><small>medium_archiver.py</small>")
+        medium_archiver_librarymanager_render_library_st_0808e805("render_library_stats()<br/><small>medium_archiver.py</small>")
+        medium_archiver_webreaderclient_init_e28dd8fe("__init__()<br/><small>medium_archiver.py</small>")
+        medium_archiver_webreaderclient_is_mirror_health_032304dd("is_mirror_healthy()<br/><small>medium_archiver.py</small>")
+    end
+    server_medium_archive_url_ec8b2157("medium_archive_url()<br/><small>server.py</small>")
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_init_60ac707d
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_extract_post_hash_52f6c3f1
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_normalize_title_996bbe72
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_load_or_rebuild_c3cc867d
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_save_manifest_0db6971d
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_check_archived_37e94cc2
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_register_article_a83ade53
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_search_fa490199
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_render_search_res_cfe52e04
+    medium_archiver_librarymanager_31cc094a -->|method| medium_archiver_librarymanager_render_library_st_0808e805
+    medium_archiver_webreaderclient_4d1d2dca -->|method| medium_archiver_webreaderclient_init_e28dd8fe
+    medium_archiver_webreaderclient_4d1d2dca -->|method| medium_archiver_webreaderclient_is_mirror_health_032304dd
+    medium_archiver_librarymanager_check_archived_37e94cc2 -->|calls| medium_archiver_librarymanager_extract_post_hash_52f6c3f1
+    medium_archiver_librarymanager_check_archived_37e94cc2 -->|calls| medium_archiver_librarymanager_normalize_title_996bbe72
+    medium_archiver_librarymanager_init_60ac707d -->|calls| medium_archiver_librarymanager_load_or_rebuild_c3cc867d
+    medium_archiver_librarymanager_load_or_rebuild_c3cc867d -->|calls| medium_archiver_librarymanager_extract_post_hash_52f6c3f1
+    medium_archiver_librarymanager_load_or_rebuild_c3cc867d -->|calls| medium_archiver_librarymanager_normalize_title_996bbe72
+    medium_archiver_librarymanager_load_or_rebuild_c3cc867d -->|calls| medium_archiver_librarymanager_save_manifest_0db6971d
+    medium_archiver_librarymanager_register_article_a83ade53 -->|calls| medium_archiver_librarymanager_extract_post_hash_52f6c3f1
+    medium_archiver_librarymanager_register_article_a83ade53 -->|calls| medium_archiver_librarymanager_normalize_title_996bbe72
+    medium_archiver_librarymanager_register_article_a83ade53 -->|calls| medium_archiver_librarymanager_save_manifest_0db6971d
+    medium_archiver_mediumarchiver_init_e7faa508 -->|calls| medium_archiver_librarymanager_31cc094a
+    medium_archiver_mediumarchiver_init_e7faa508 -->|calls| medium_archiver_mediumfeeddiscoverer_0e2ecead
+    medium_archiver_mediumarchiver_init_e7faa508 -->|calls| medium_archiver_webreaderclient_4d1d2dca
+    %% Omitted for readability: 52 nodes, 4 edges
+    class medium_archiver_librarymanager_31cc094a klass;
+    class medium_archiver_webreaderclient_4d1d2dca entry;
+    class medium_archiver_mediumarchiver_init_e7faa508 function;
+    class medium_archiver_mediumfeeddiscoverer_0e2ecead klass;
+    class medium_archiver_domsanitizerandassetbundler_467940b4 async;
+    class medium_archiver_librarymanager_init_60ac707d function;
+    class medium_archiver_librarymanager_extract_post_hash_52f6c3f1 function;
+    class medium_archiver_librarymanager_normalize_title_996bbe72 function;
+    class medium_archiver_librarymanager_load_or_rebuild_c3cc867d function;
+    class medium_archiver_librarymanager_save_manifest_0db6971d function;
+    class medium_archiver_librarymanager_check_archived_37e94cc2 function;
+    class medium_archiver_librarymanager_register_article_a83ade53 function;
+    class medium_archiver_librarymanager_search_fa490199 function;
+    class medium_archiver_librarymanager_render_search_res_cfe52e04 function;
+    class medium_archiver_librarymanager_render_library_st_0808e805 function;
+    class medium_archiver_webreaderclient_init_e28dd8fe function;
+    class medium_archiver_webreaderclient_is_mirror_health_032304dd function;
+    class server_medium_archive_url_ec8b2157 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>ArchivedEntry</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>load_or_rebuild()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>register_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>ArchivedEntry node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>medium_archive_url()</code><br><small style="color:var(--muted)">server.py</small><br><code>server.py</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>check_archived()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>extract_post_hash()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+7 more</td>
+  <td>LibraryManager node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>.check_archived()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>extract_post_hash()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>normalize_title()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.check_archived() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.extract_post_hash()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>check_archived()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>load_or_rebuild()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+2 more</td>
+  <td>No direct outbound edge</td>
+  <td>Caches analysis results or computes cache keys.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>load_or_rebuild()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.__init__() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>.load_or_rebuild()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>ArchivedEntry</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>extract_post_hash()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>normalize_title()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+2 more</td>
+  <td>.load_or_rebuild() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.normalize_title()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>check_archived()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>load_or_rebuild()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>.normalize_title() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>.register_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>ArchivedEntry</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>extract_post_hash()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>normalize_title()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+1 more</td>
+  <td>.register_article() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>.render_library_stats()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.render_library_stats() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>.render_search_results()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.render_search_results() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>.save_manifest()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>load_or_rebuild()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>register_article()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.save_manifest() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>.search()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.search() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>Metadata of an article stored in the local knowledge base.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Metadata of an article stored in the local knowledge base..</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>Manages local knowledge base indexing, cross-topic deduplication, verification…</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Manages local knowledge base indexing, cross-topic deduplication, verification….</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>Extract Medium post ID hash (e.g. 1bd085d4a126 from slug-1bd085d4a126).</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Extract Medium post ID hash (e.g. 1bd085d4a126 from slug-1bd085d4a126)..</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>Normalize title for fuzzy/case-insensitive comparison.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Normalize title for fuzzy/case-insensitive comparison..</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>Scan disk and synchronize local knowledge base manifest.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Scan disk and synchronize local knowledge base manifest..</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>Persist manifest JSON to disk.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Persist manifest JSON to disk..</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>Check if an article is already downloaded in the knowledge base, matching by…</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Check if an article is already downloaded in the knowledge base, matching by….</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>Register newly archived article in manifest.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Register newly archived article in manifest..</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>Search local library by title, author, topic, or source URL.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Search local library by title, author, topic, or source URL..</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>Render beautiful search results table.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Render beautiful search results table..</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>Display library statistics table and summary.</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Display library statistics table and summary..</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>WebReaderClient</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>build_reader_url()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>fetch_article_html()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+4 more</td>
+  <td>WebReaderClient node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>MediumArchiver</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>Console</code><br><code>DOMSanitizerAndAssetBundler</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+3 more</td>
+  <td>.__init__() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>.build_reader_url()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>fetch_article_html()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>WebReaderClient</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.build_reader_url() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>.fetch_article_html()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>WebReaderClient</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>build_reader_url()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>get_headers()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>is_mirror_healthy()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+1 more</td>
+  <td>Exports documentation data to a target format.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>.get_headers()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>fetch_article_html()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>WebReaderClient</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.get_headers() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>WebReaderClient</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>Console</code></td>
+  <td>.__init__() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>.is_mirror_healthy()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>fetch_article_html()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>WebReaderClient</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.is_mirror_healthy() node in medium_archiver.py.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>medium_archiver.py</code></td><td>65 nodes</td></tr>
+<tr><td><code>server.py</code></td><td>2 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x32, explains x31, method x28, references x11. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 4. Serving API ====== -->
+<h2 id="serve-api">4. Serving API</h2>
+<p>Serving API groups implementation around serverpy, medium, get, args, mostly in server.py. This section covers 12 nodes and 14 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Serving API (12 nodes, 14 edges)
+    subgraph serve_api_server_py_4f1d8c49["server.py"]
+        server_3de4f901("server.py")
+        server_rationale_182_2f239dad("Get full content of an article. Args: i...<br/><small>server.py</small>")
+        server_rationale_233_19f2f453("Return knowledge base statistics and to...<br/><small>server.py</small>")
+        server_rationale_354_89a95875("Create a zip archive file of the knowle...<br/><small>server.py</small>")
+        server_rationale_401_40d5f518("Start MCP stdio server.<br/><small>server.py</small>")
+        server_rationale_83_36730aad("Search across all indexed Medium articl...<br/><small>server.py</small>")
+        server_medium_export_archive_a92a459b("medium_export_archive()<br/><small>server.py</small>")
+        server_medium_get_article_f484482a("medium_get_article()<br/><small>server.py</small>")
+        server_medium_get_stats_66091f6c("medium_get_stats()<br/><small>server.py</small>")
+        server_medium_search_articles_a34543b6("medium_search_articles()<br/><small>server.py</small>")
+        server_main_a6c2e85e("main()<br/><small>server.py</small>")
+    end
+    tool_1937c4c2("tool")
+    server_medium_export_archive_a92a459b -->|references| tool_1937c4c2
+    server_medium_get_article_f484482a -->|references| tool_1937c4c2
+    server_medium_get_stats_66091f6c -->|references| tool_1937c4c2
+    server_medium_search_articles_a34543b6 -->|references| tool_1937c4c2
+    server_3de4f901 -->|contains| server_medium_get_article_f484482a
+    server_3de4f901 -->|contains| server_medium_get_stats_66091f6c
+    server_3de4f901 -->|contains| server_medium_export_archive_a92a459b
+    server_3de4f901 -->|contains| server_main_a6c2e85e
+    server_3de4f901 -->|contains| server_medium_search_articles_a34543b6
+    server_rationale_182_2f239dad -->|explains| server_medium_get_article_f484482a
+    server_rationale_233_19f2f453 -->|explains| server_medium_get_stats_66091f6c
+    server_rationale_354_89a95875 -->|explains| server_medium_export_archive_a92a459b
+    server_rationale_401_40d5f518 -->|explains| server_main_a6c2e85e
+    server_rationale_83_36730aad -->|explains| server_medium_search_articles_a34543b6
+    class server_3de4f901 module;
+    class server_rationale_182_2f239dad concept;
+    class server_rationale_233_19f2f453 concept;
+    class server_rationale_354_89a95875 concept;
+    class server_rationale_401_40d5f518 concept;
+    class server_rationale_83_36730aad concept;
+    class server_medium_export_archive_a92a459b function;
+    class server_medium_get_article_f484482a function;
+    class server_medium_get_stats_66091f6c function;
+    class server_medium_search_articles_a34543b6 function;
+    class server_main_a6c2e85e function;
+    class tool_1937c4c2 function;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>main()</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>main() node in server.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>medium_export_archive()</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>Path</code></td>
+  <td>Exports documentation data to a target format.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>medium_get_article()</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>medium_get_article() node in server.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>medium_get_stats()</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>medium_get_stats() node in server.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>medium_search_articles()</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>medium_search_articles() node in server.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>server.py</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-class">Module</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>ArticleMetadata</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>LibraryManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>medium_archiver.py</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+3 more</td>
+  <td>Module file in server.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>tool</code><br><small style="color:var(--muted)"></small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>tool node in project.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>Get full content of an article. Args: identifier: Post hash (e.g.…</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Get full content of an article. Args: identifier: Post hash (e.g.….</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>Return knowledge base statistics and topic counts.</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Return knowledge base statistics and topic counts..</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>Create a zip archive file of the knowledge base or topic. Args: topic: Specific…</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Create a zip archive file of the knowledge base or topic. Args: topic: Specific….</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>Start MCP stdio server.</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Start MCP stdio server..</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>Search across all indexed Medium articles in the local knowledge base. Args:…</code><br><small style="color:var(--muted)">server.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Search across all indexed Medium articles in the local knowledge base. Args:….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>server.py</code></td><td>11 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x5, explains x5, references x4. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 5. Medium Archiverpy Get ====== -->
+<h2 id="medium-archiverpy-get">5. Medium Archiverpy Get</h2>
+<p>Medium Archiverpy Get groups implementation around medium, archiverpy, get, completed, mostly in medium_archiver.py. This section covers 12 nodes and 15 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Medium Archiverpy Get (12 nodes, 15 edges)
+    medium_archiver_downloadstatemanager_a66f549e("DownloadStateManager<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_init_1019e2d8("__init__()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_init_sessio_4fb86bc7("init_session()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_mark_comple_58b2444c("mark_completed()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_mark_failed_4253691e("mark_failed()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_load_aedbd196("_load()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_is_resumabl_0b4a38c5("is_resumable()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_get_pending_3d5413a4("get_pending_urls()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_get_complet_4aa1bb42("get_completed_urls()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_clear_0d06fa07("clear()<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_save_162ab241("_save()<br/><small>medium_archiver.py</small>")
+    medium_archiver_rationale_1302_7b3395d8("Manages persistent state and checkpoint...<br/><small>medium_archiver.py</small>")
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_init_1019e2d8
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_load_aedbd196
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_is_resumabl_0b4a38c5
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_init_sessio_4fb86bc7
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_mark_comple_58b2444c
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_mark_failed_4253691e
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_get_pending_3d5413a4
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_get_complet_4aa1bb42
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_clear_0d06fa07
+    medium_archiver_downloadstatemanager_a66f549e -->|method| medium_archiver_downloadstatemanager_save_162ab241
+    medium_archiver_downloadstatemanager_init_1019e2d8 -->|calls| medium_archiver_downloadstatemanager_load_aedbd196
+    medium_archiver_downloadstatemanager_init_sessio_4fb86bc7 -->|calls| medium_archiver_downloadstatemanager_save_162ab241
+    medium_archiver_downloadstatemanager_mark_comple_58b2444c -->|calls| medium_archiver_downloadstatemanager_save_162ab241
+    medium_archiver_downloadstatemanager_mark_failed_4253691e -->|calls| medium_archiver_downloadstatemanager_save_162ab241
+    class medium_archiver_downloadstatemanager_a66f549e klass;
+    class medium_archiver_downloadstatemanager_init_1019e2d8 function;
+    class medium_archiver_downloadstatemanager_init_sessio_4fb86bc7 function;
+    class medium_archiver_downloadstatemanager_mark_comple_58b2444c function;
+    class medium_archiver_downloadstatemanager_mark_failed_4253691e function;
+    class medium_archiver_downloadstatemanager_load_aedbd196 function;
+    class medium_archiver_downloadstatemanager_is_resumabl_0b4a38c5 function;
+    class medium_archiver_downloadstatemanager_get_pending_3d5413a4 function;
+    class medium_archiver_downloadstatemanager_get_complet_4aa1bb42 function;
+    class medium_archiver_downloadstatemanager_clear_0d06fa07 function;
+    class medium_archiver_downloadstatemanager_save_162ab241 function;
+    class medium_archiver_rationale_1302_7b3395d8 concept;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-class">Class</span></td>
+  <td><code>run()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>_load()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>_save()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+7 more</td>
+  <td>DownloadStateManager node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>.clear()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.clear() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>.get_completed_urls()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.get_completed_urls() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>.get_pending_urls()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.get_pending_urls() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>.__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>_load()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.__init__() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>.init_session()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>_save()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.init_session() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>.is_resumable()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>.is_resumable() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>._load()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>__init__()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>No direct outbound edge</td>
+  <td>._load() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>.mark_completed()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>_save()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.mark_completed() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>.mark_failed()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><code>_save()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td>.mark_failed() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>._save()</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>DownloadStateManager</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>init_session()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br><code>mark_completed()</code><br><small style="color:var(--muted)">medium_archiver.py</small><br>+1 more</td>
+  <td>No direct outbound edge</td>
+  <td>._save() node in medium_archiver.py.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>Manages persistent state and checkpointing for batch downloads, enabling…</code><br><small style="color:var(--muted)">medium_archiver.py</small></td>
+  <td><span class="tag tag-func">Concept</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Design note for Manages persistent state and checkpointing for batch downloads, enabling….</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>medium_archiver.py</code></td><td>12 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: method x10, calls x4, explains x1. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<h2 id="stats">Project Statistics</h2>
+
+<div class="grid">
+  <div class="card">
+    <h4>Graph</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>Nodes</td><td>114</td></tr>
+      <tr><td>Edges</td><td>190</td></tr>
+      <tr><td>Hyperedges</td><td>0</td></tr>
+      <tr><td>Communities</td><td>7</td></tr>
+      <tr><td>Documented Sections</td><td>4</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Edge Confidence</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><td>EXTRACTED</td><td>186</td></tr>
+      <tr><td>INFERRED</td><td>4</td></tr>
+      <tr><td>AMBIGUOUS</td><td>0</td></tr>
+    </table>
+  </div>
+</div>
+
+<div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
+  <p>mediumm — Architecture Documentation</p>
+  <p>Generated: 2026-09-19 06:17 UTC · graphify callflow-html</p>
+</div>
+
+</div><!-- .container -->
+
+<script>
+(function () {
+  const mermaidConfig = {
+    startOnLoad: false,
+    theme: 'dark',
+    securityLevel: 'loose',
+    flowchart: { htmlLabels: true, useMaxWidth: true },
+    themeVariables: {
+      primaryColor: '#1e293b',
+      primaryTextColor: '#e2e8f0',
+      primaryBorderColor: '#38bdf8',
+      secondaryColor: '#0f172a',
+      tertiaryColor: '#334155',
+      lineColor: '#64748b',
+      textColor: '#e2e8f0',
+    }
+  };
+
+  mermaid.initialize(mermaidConfig);
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function enhanceMermaidDiagrams() {
+    document.querySelectorAll('.mermaid').forEach((container) => {
+      if (container.dataset.zoomReady === 'true') return;
+      const svg = container.querySelector('svg');
+      if (!svg) return;
+
+      container.dataset.zoomReady = 'true';
+      container.classList.add('is-enhanced');
+
+      const viewport = document.createElement('div');
+      viewport.className = 'mermaid-viewport';
+      svg.parentNode.insertBefore(viewport, svg);
+      viewport.appendChild(svg);
+
+      const toolbar = document.createElement('div');
+      toolbar.className = 'mermaid-toolbar';
+      toolbar.innerHTML = [
+        '<button type="button" data-action="zoom-out" title="Zoom out">-</button>',
+        '<span class="zoom-level" data-role="level">100%</span>',
+        '<button type="button" data-action="zoom-in" title="Zoom in">+</button>',
+        '<button type="button" data-action="fit" title="Fit width">Fit</button>',
+        '<button type="button" data-action="reset" title="Reset view">Reset</button>'
+      ].join('');
+      container.insertBefore(toolbar, viewport);
+
+      const state = { scale: 1, x: 0, y: 0, dragging: false, startX: 0, startY: 0, originX: 0, originY: 0 };
+      const level = toolbar.querySelector('[data-role="level"]');
+
+      function applyTransform() {
+        svg.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+        level.textContent = `${Math.round(state.scale * 100)}%`;
+      }
+
+      function zoomBy(delta) {
+        state.scale = clamp(state.scale + delta, 0.25, 3);
+        applyTransform();
+      }
+
+      function reset() {
+        state.scale = 1;
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      function fitWidth() {
+        const rawWidth = svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width
+          ? svg.viewBox.baseVal.width
+          : svg.getBoundingClientRect().width / state.scale;
+        if (!rawWidth) {
+          reset();
+          return;
+        }
+        state.scale = clamp((viewport.clientWidth - 48) / rawWidth, 0.25, 1.4);
+        state.x = 0;
+        state.y = 0;
+        applyTransform();
+      }
+
+      toolbar.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-action]');
+        if (!button) return;
+        const action = button.dataset.action;
+        if (action === 'zoom-in') zoomBy(0.15);
+        if (action === 'zoom-out') zoomBy(-0.15);
+        if (action === 'fit') fitWidth();
+        if (action === 'reset') reset();
+      });
+
+      viewport.addEventListener('wheel', (event) => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        zoomBy(event.deltaY < 0 ? 0.1 : -0.1);
+      }, { passive: false });
+
+      viewport.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        state.dragging = true;
+        state.startX = event.clientX;
+        state.startY = event.clientY;
+        state.originX = state.x;
+        state.originY = state.y;
+        viewport.classList.add('is-dragging');
+        viewport.setPointerCapture(event.pointerId);
+      });
+
+      viewport.addEventListener('pointermove', (event) => {
+        if (!state.dragging) return;
+        state.x = state.originX + event.clientX - state.startX;
+        state.y = state.originY + event.clientY - state.startY;
+        applyTransform();
+      });
+
+      function endDrag(event) {
+        if (!state.dragging) return;
+        state.dragging = false;
+        viewport.classList.remove('is-dragging');
+        if (viewport.hasPointerCapture(event.pointerId)) {
+          viewport.releasePointerCapture(event.pointerId);
+        }
+      }
+
+      viewport.addEventListener('pointerup', endDrag);
+      viewport.addEventListener('pointercancel', endDrag);
+      applyTransform();
+    });
+  }
+
+  function renderMermaid() {
+    const result = mermaid.run
+      ? mermaid.run({ querySelector: '.mermaid' })
+      : Promise.resolve();
+    Promise.resolve(result)
+      .then(enhanceMermaidDiagrams)
+      .catch((error) => {
+        console.error('Mermaid render failed:', error);
+        enhanceMermaidDiagrams();
+      });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderMermaid);
+  } else {
+    renderMermaid();
+  }
+})();
+</script>
+
+</body>
+</html>
