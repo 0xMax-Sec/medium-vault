@@ -17,6 +17,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+import ipaddress
 import json
 import logging
 import mimetypes
@@ -25,6 +26,7 @@ from pathlib import Path
 import random
 import re
 import signal
+import socket
 import sys
 import threading
 import time
@@ -83,6 +85,64 @@ DEFAULT_READERS = [
     "https://freedium-mirror.cfd/",
     "https://freedium.cfd/",
 ]
+
+BLOCKED_IP_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
+]
+
+
+def is_safe_url(url: str) -> Tuple[bool, str]:
+    """
+    Validates outbound URLs to prevent SSRF against loopback, private networks,
+    and cloud instance metadata endpoints (RFC 1918 / RFC 3927).
+    """
+    if not url:
+        return False, "URL vacía"
+    try:
+        parsed = urlsplit(url.strip())
+        if parsed.scheme.lower() not in ("http", "https"):
+            return False, f"Esquema no permitido: '{parsed.scheme}' (solo http/https)"
+        hostname = parsed.hostname
+        if not hostname:
+            return False, "Nombre de host ausente en la URL"
+
+        lower_host = hostname.lower().strip(".")
+        if lower_host in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal"):
+            return False, "Acceso a localhost/loopback o metadatos bloqueado por seguridad"
+
+        # Check IP literal directly
+        try:
+            ip_obj = ipaddress.ip_address(lower_host)
+            for net in BLOCKED_IP_NETWORKS:
+                if ip_obj in net:
+                    return False, f"Dirección IP privada o reservada bloqueada: {ip_obj}"
+        except ValueError:
+            pass
+
+        # Resolve hostname to detect DNS rebinding to internal addresses
+        try:
+            addr_info = socket.getaddrinfo(lower_host, None)
+            for family, _, _, _, sockaddr in addr_info:
+                ip_str = sockaddr[0]
+                ip_obj = ipaddress.ip_address(ip_str)
+                for net in BLOCKED_IP_NETWORKS:
+                    if ip_obj in net:
+                        return False, f"El host '{hostname}' resuelve a una IP interna ({ip_obj})"
+        except socket.gaierror:
+            # Domain could not be resolved (will fail safely on fetch, not internal)
+            pass
+
+        return True, "OK"
+    except Exception as exc:
+        return False, f"Error validando URL: {exc}"
 
 
 @dataclass
@@ -1367,6 +1427,12 @@ class WebReaderClient:
         filtering out inactive or unresolvable hosts immediately.
         Returns a tuple: (html_content, active_base_url).
         """
+        # Validate outbound URL safety against SSRF
+        safe, reason = is_safe_url(target_url)
+        if not safe:
+            self.console.print(f"[bold red][!] URL no permitida por seguridad (SSRF): {reason}[/bold red]")
+            return None, None
+
         # Formulate candidate endpoints, prioritizing healthy mirrors
         endpoints: List[Tuple[str, str, str]] = []
         for idx, mirror in enumerate(self.reader_mirrors):
@@ -1386,6 +1452,10 @@ class WebReaderClient:
         endpoints.append((target_url, target_url, "Direct Medium Fallback"))
 
         for candidate_url, base_url, role in endpoints:
+            cand_safe, _ = is_safe_url(candidate_url)
+            if not cand_safe:
+                continue
+
             host = urlsplit(candidate_url).netloc or candidate_url
 
             for attempt in range(1, self.max_retries + 1):
@@ -1533,6 +1603,11 @@ class DOMSanitizerAndAssetBundler:
         Download a remote image to dest_path.
         Returns (success: bool, final_filename: str).
         """
+        # SSRF check on image source URL
+        safe, reason = is_safe_url(img_url)
+        if not safe:
+            return False, ""
+
         headers = {
             "User-Agent": random.choice(DESKTOP_USER_AGENTS),
             "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
@@ -1556,9 +1631,15 @@ class DOMSanitizerAndAssetBundler:
                 if ext and not dest_path.suffix:
                     dest_path = dest_path.with_suffix(ext)
 
+                max_bytes = 25 * 1024 * 1024  # 25 MB max per asset
+                downloaded = 0
                 with open(dest_path, "wb") as f:
                     for chunk in res.iter_content(chunk_size=16384):
                         if chunk:
+                            downloaded += len(chunk)
+                            if downloaded > max_bytes:
+                                dest_path.unlink(missing_ok=True)
+                                return False, ""
                             f.write(chunk)
                 return True, dest_path.name
         except Exception as exc:
@@ -1882,8 +1963,17 @@ class MediumArchiver:
         self, metadata: ArticleMetadata, topic_dir: Path
     ) -> Tuple[bool, Path]:
         """Archive a single article into topic_dir."""
+        # Validate that topic_dir stays strictly within output_dir
+        resolved_topic_dir = topic_dir.resolve()
+        if not resolved_topic_dir.is_relative_to(self.output_dir.resolve()):
+            self.console.print(f"[bold red][!] Ruta de tema insegura fuera del directorio base: {topic_dir}[/bold red]")
+            return False, topic_dir
+
         sanitized_title = PathSanitizer.sanitize(metadata.title)
-        article_dir = topic_dir / sanitized_title
+        article_dir = (resolved_topic_dir / sanitized_title).resolve()
+        if not article_dir.is_relative_to(self.output_dir.resolve()):
+            return False, article_dir
+
         images_dir = article_dir / "images"
 
         article_dir.mkdir(parents=True, exist_ok=True)

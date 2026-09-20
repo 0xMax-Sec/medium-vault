@@ -51,3 +51,43 @@ def test_fix_mojibake():
     fixed_plain, changed_plain = fix_mojibake(plain_text)
     assert fixed_plain == plain_text
     assert changed_plain == 0
+
+
+def test_is_safe_url():
+    from medium_archiver import is_safe_url
+
+    # Valid external URLs
+    ok, _ = is_safe_url("https://medium.com/@user/writeup-123")
+    assert ok is True
+
+    # Blocked loopback & metadata
+    ok, reason = is_safe_url("http://127.0.0.1:8080/")
+    assert ok is False
+    assert "bloqueado" in reason.lower() or "reservada" in reason.lower()
+
+    ok, _ = is_safe_url("http://localhost:3000/")
+    assert ok is False
+
+    ok, _ = is_safe_url("http://169.254.169.254/latest/meta-data/")
+    assert ok is False
+
+    ok, _ = is_safe_url("http://0.0.0.0/")
+    assert ok is False
+
+    # Blocked private networks
+    ok, _ = is_safe_url("http://10.0.0.5/api")
+    assert ok is False
+    ok, _ = is_safe_url("http://172.16.0.1/")
+    assert ok is False
+    ok, _ = is_safe_url("http://192.168.0.1/")
+    assert ok is False
+
+    # Blocked schemes
+    ok, reason = is_safe_url("file:///etc/passwd")
+    assert ok is False
+    assert "esquema" in reason.lower()
+
+
+def test_path_sanitizer_traversal():
+    assert PathSanitizer.sanitize("../../evil/path") == "evilpath"
+    assert PathSanitizer.sanitize("..\\..\\windows\\escape") == "windowsescape"

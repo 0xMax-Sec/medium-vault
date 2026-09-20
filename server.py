@@ -43,6 +43,7 @@ from medium_archiver import (
     MediumFeedDiscoverer,
     PathSanitizer,
     fix_mojibake,
+    is_safe_url,
 )
 
 # Base knowledge base path (can be overridden via environment variable)
@@ -272,6 +273,22 @@ def medium_archive_url(url: str, topic: str = "bug-bounty") -> str:
         url: Full Medium article URL (e.g. 'https://medium.com/@user/my-writeup-123456789abc').
         topic: Topic folder name to store under (default: 'bug-bounty').
     """
+    # SSRF & protocol validation
+    safe, reason = is_safe_url(url)
+    if not safe:
+        return f"Error de seguridad: URL insegura o no permitida ({reason}): '{url}'"
+
+    # Sanitize topic parameter to prevent path traversal
+    clean_topic = PathSanitizer.sanitize(topic) if topic else "bug-bounty"
+    if not clean_topic:
+        clean_topic = "bug-bounty"
+
+    topic_dir = (archiver.output_dir / clean_topic).resolve()
+    try:
+        topic_dir.relative_to(archiver.output_dir.resolve())
+    except ValueError:
+        return f"Error de seguridad: El tema especificado '{topic}' intenta escapar del directorio de almacenamiento."
+
     # If user passed a mirror URL, extract the canonical Medium URL
     if "freedium" in url.lower() and "http" in url[8:]:
         m_url = re.search(r"https?://(?:www\.)?medium\.com/\S+", url)
@@ -290,7 +307,7 @@ def medium_archive_url(url: str, topic: str = "bug-bounty") -> str:
         published="",
         source_url=url,
         clean_url=clean_url,
-        topic=topic,
+        topic=clean_topic,
     )
     already, entry = library.check_archived(dummy_meta)
     if already and entry:
@@ -352,10 +369,9 @@ def medium_archive_url(url: str, topic: str = "bug-bounty") -> str:
         published=pub_date,
         source_url=url,
         clean_url=clean_url,
-        topic=topic,
+        topic=clean_topic,
     )
 
-    topic_dir = archiver.output_dir / topic
     success, article_dir = archiver.archive_article(metadata, topic_dir)
     if not success:
         return f"Error: Falló el procesamiento del artículo para '{url}'."
@@ -387,24 +403,45 @@ def medium_export_archive(topic: str = "", output_zip_path: str = "") -> str:
 
     Args:
         topic: Specific topic folder to export (e.g. 'bug-bounty'). Leave empty for entire library.
-        output_zip_path: Optional destination zip file path.
+        output_zip_path: Optional destination zip file path within the exports directory.
     """
     library.load_or_rebuild()
     source_dir = library.base_dir
+    clean_topic = ""
     if topic:
-        source_dir = library.base_dir / topic
+        clean_topic = PathSanitizer.sanitize(topic)
+        source_dir = (library.base_dir / clean_topic).resolve()
+        try:
+            source_dir.relative_to(library.base_dir.resolve())
+        except ValueError:
+            return f"Error de seguridad: El tema '{topic}' intenta escapar del directorio base."
         if not source_dir.exists():
             return f"Error: El tema '{topic}' no existe en `{library.base_dir}`."
 
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    target_name = topic or "all_topics"
+    target_name = clean_topic or "all_topics"
+
+    exports_dir = (library.base_dir / "exports").resolve()
+    exports_dir.mkdir(parents=True, exist_ok=True)
 
     if output_zip_path:
-        zip_file = Path(output_zip_path).resolve()
+        target_path = Path(output_zip_path)
+        if not target_path.is_absolute():
+            zip_file = (exports_dir / target_path).resolve()
+        else:
+            zip_file = target_path.resolve()
+
+        try:
+            zip_file.relative_to(exports_dir)
+        except ValueError:
+            return (
+                f"Error de seguridad: La ruta de destino '{output_zip_path}' debe encontrarse "
+                f"dentro del directorio seguro de exportaciones `{exports_dir}`."
+            )
+        if zip_file.suffix.lower() != ".zip":
+            return "Error de seguridad: El archivo de exportación debe tener extensión '.zip'."
         zip_file.parent.mkdir(parents=True, exist_ok=True)
     else:
-        exports_dir = library.base_dir / "exports"
-        exports_dir.mkdir(parents=True, exist_ok=True)
         zip_file = exports_dir / f"medium_knowledge_{target_name}_{timestamp}.zip"
 
     files_count = 0
@@ -424,7 +461,7 @@ def medium_export_archive(topic: str = "", output_zip_path: str = "") -> str:
         f"- **Archivo Zip**: `{zip_file}`\n"
         f"- **Archivos Comprimidos**: {files_count} (artículos Markdown + imágenes HD + manifiesto)\n"
         f"- **Tamaño del Archivo**: {size_mb:.2f} MB\n"
-        f"- **Alcance**: {'Toda la biblioteca' if not topic else f'Tema #{topic}'}"
+        f"- **Alcance**: {'Toda la biblioteca' if not clean_topic else f'Tema #{clean_topic}'}"
     )
 
 

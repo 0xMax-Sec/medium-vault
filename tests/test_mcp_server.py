@@ -39,13 +39,15 @@ def setup_isolated_kb(tmp_path, monkeypatch):
         images_count=0,
     )
     
-    # Point server's library to the isolated temp directory
+    # Point server's library and archiver to the isolated temp directory
     server.library.base_dir = temp_kb
     server.library.manifest_path = temp_kb / ".library_manifest.json"
     server.library.entries = {entry.post_hash: entry}
     server.library.title_map = {server.library.normalize_title(entry.title): entry.post_hash}
     server.library.url_map = {entry.clean_url: entry.post_hash}
     server.library.save_manifest()
+    server.archiver.output_dir = temp_kb
+    server.archiver.library = server.library
     
     yield temp_kb
 
@@ -75,9 +77,56 @@ def test_medium_get_stats():
     assert "#bug-bounty" in stats
 
 
-def test_medium_export_archive(tmp_path):
-    out_zip = tmp_path / "test_export.zip"
-    res = server.medium_export_archive(topic="bug-bounty", output_zip_path=str(out_zip))
+def test_medium_export_archive():
+    res = server.medium_export_archive(topic="bug-bounty", output_zip_path="test_export.zip")
     assert "[✓]" in res
+    exports_dir = server.library.base_dir / "exports"
+    out_zip = exports_dir / "test_export.zip"
     assert out_zip.exists()
     assert out_zip.stat().st_size > 0
+
+
+def test_export_archive_path_traversal_blocked(tmp_path):
+    # Attempting to write outside exports_dir via absolute path
+    outside_zip = tmp_path / "evil.zip"
+    res = server.medium_export_archive(topic="bug-bounty", output_zip_path=str(outside_zip))
+    assert "Error de seguridad" in res
+    assert not outside_zip.exists()
+
+    # Attempting traversal via relative path
+    res = server.medium_export_archive(topic="bug-bounty", output_zip_path="../../evil.zip")
+    assert "Error de seguridad" in res
+
+    # Attempting non-zip extension
+    res = server.medium_export_archive(topic="bug-bounty", output_zip_path="payload.sh")
+    assert "Error de seguridad" in res
+
+    # Attempting topic traversal
+    res = server.medium_export_archive(topic="../../etc")
+    assert "Error de seguridad" in res or "no existe" in res
+
+
+def test_archive_url_ssrf_blocked():
+    # Loopback IP
+    res = server.medium_archive_url("http://127.0.0.1:8080/admin")
+    assert "Error de seguridad" in res
+    assert "bloqueado" in res or "insegura" in res
+
+    # Cloud metadata IP
+    res = server.medium_archive_url("http://169.254.169.254/latest/meta-data")
+    assert "Error de seguridad" in res
+
+    # RFC 1918 Private range
+    res = server.medium_archive_url("http://192.168.1.1/router")
+    assert "Error de seguridad" in res
+
+    # Non-http scheme
+    res = server.medium_archive_url("file:///etc/passwd")
+    assert "Error de seguridad" in res
+
+
+def test_archive_url_topic_traversal_sanitized():
+    # Passing directory traversal in topic
+    # PathSanitizer sanitizes "../../safe-topic" safely
+    res = server.medium_archive_url("https://medium.com/@author/test-article-123456789abc", topic="../../safe-topic")
+    assert "Error de seguridad: El tema" not in res
