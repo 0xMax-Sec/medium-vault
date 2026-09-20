@@ -28,7 +28,7 @@ import signal
 import sys
 import threading
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
 from bs4 import BeautifulSoup, Tag
@@ -117,6 +117,10 @@ class ArchivedEntry:
     retrieved_at: str
     file_size_kb: float
     images_count: int
+
+
+# Backward compatibility alias
+LibraryEntry = ArchivedEntry
 
 
 def fix_mojibake(text: str) -> Tuple[str, int]:
@@ -278,15 +282,23 @@ class LibraryManager:
     verification of already downloaded articles, and internal search.
     """
 
-    def __init__(self, base_dir: Path, console: Console):
-        self.base_dir = base_dir
-        self.console = console
+    def __init__(self, base_dir: Union[str, Path], console: Optional[Console] = None):
+        self.base_dir = Path(base_dir)
+        self.console = console or Console(file=sys.stderr, quiet=True)
         self._lock = threading.RLock()
         self.manifest_path = self.base_dir / ".library_manifest.json"
         self.entries: Dict[str, ArchivedEntry] = {}
         self.url_map: Dict[str, str] = {}
         self.title_map: Dict[str, str] = {}
         self.load_or_rebuild()
+
+    @property
+    def manifest_file(self) -> Path:
+        return self.manifest_path
+
+    @manifest_file.setter
+    def manifest_file(self, value: Union[str, Path]) -> None:
+        self.manifest_path = Path(value)
 
     @staticmethod
     def extract_post_hash(url: str) -> Optional[str]:
@@ -306,11 +318,33 @@ class LibraryManager:
         t = re.sub(r"[^\w\s]", "", title.lower())
         return re.sub(r"\s+", " ", t).strip()
 
-    def load_or_rebuild(self) -> None:
+    def load_or_rebuild(self, force_rebuild: bool = False) -> None:
         """Scan disk and synchronize local knowledge base manifest."""
         with self._lock:
             if not self.base_dir.exists():
                 return
+
+            if not force_rebuild and self.manifest_path.exists():
+                try:
+                    with open(self.manifest_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    self.entries.clear()
+                    self.url_map.clear()
+                    self.title_map.clear()
+                    for item in data.get("articles", []):
+                        entry = ArchivedEntry(**item)
+                        key = entry.post_hash or entry.clean_url or self.normalize_title(entry.title)
+                        if key:
+                            self.entries[key] = entry
+                            if entry.clean_url:
+                                self.url_map[entry.clean_url] = key
+                            norm_title = self.normalize_title(entry.title)
+                            if norm_title:
+                                self.title_map[norm_title] = key
+                    return
+                except Exception:
+                    pass
+
             self.entries.clear()
             self.url_map.clear()
             self.title_map.clear()
@@ -365,7 +399,21 @@ class LibraryManager:
                 except Exception:
                     continue
 
-            self.save_manifest()
+            if self.entries or self.manifest_path.exists():
+                self.save_manifest()
+
+    def add_entry(self, entry: ArchivedEntry) -> None:
+        """Add or update an archived entry directly in the library."""
+        with self._lock:
+            key = entry.post_hash or entry.clean_url or self.normalize_title(entry.title)
+            if key:
+                self.entries[key] = entry
+                if entry.clean_url:
+                    self.url_map[entry.clean_url] = key
+                norm_t = self.normalize_title(entry.title)
+                if norm_t:
+                    self.title_map[norm_t] = key
+                self.save_manifest()
 
     def save_manifest(self) -> None:
         """Persist manifest JSON to disk."""
@@ -654,6 +702,26 @@ class PathSanitizer:
     """Provides cross-platform filesystem path sanitization."""
 
     @staticmethod
+    def slugify(text: str, max_len: int = 80) -> str:
+        """Convert string to URL/filename safe slug."""
+        if not text:
+            return ""
+        import unicodedata
+        t = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
+        t = re.sub(r"[^\w\s-]", "", t.lower())
+        t = re.sub(r"[-\s]+", "-", t).strip("-_")
+        if max_len and len(t) > max_len:
+            t = t[:max_len].rsplit("-", 1)[0].strip("-_")
+            if not t:
+                t = t[:max_len]
+        return t
+
+    @classmethod
+    def sanitize_filename(cls, name: str, max_length: int = 90) -> str:
+        """Alias for filename sanitization."""
+        return cls.sanitize(name, max_length)
+
+    @staticmethod
     def sanitize(name: str, max_length: int = 90) -> str:
         """
         Sanitize a string for safe usage as a directory or file name
@@ -696,7 +764,7 @@ class MediumFeedDiscoverer:
             lower_k = k.lower()
             if (
                 lower_k.startswith("utm_")
-                or lower_k == "source"
+                or lower_k in {"source", "ref", "gi", "responsesopen"}
                 or lower_k.startswith("sk")
             ):
                 continue

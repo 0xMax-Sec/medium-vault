@@ -21,3 +21,8 @@ MediumScraper/
 .download_state.json
 *.tmp
 *.log
+
+# Pytest and coverage
+.pytest_cache/
+.coverage
+htmlcov/

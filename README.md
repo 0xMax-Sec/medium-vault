@@ -264,3 +264,35 @@ graphify extract mediumm --code-only
 graphify cluster-only mediumm
 graphify tree --graph mediumm/graphify-out/graph.json --output mediumm/graphify-out/GRAPH_TREE.html
 ```
+
+---
+
+## 🧪 Suite de Pruebas Automatizadas
+
+El repositorio cuenta con una suite completa de pruebas unitarias y de integración bajo `pytest`:
+
+```bash
+# Ejecutar toda la batería de pruebas
+pytest tests/ -v
+
+# Ejecutar módulos específicos
+pytest tests/test_mcp_server.py -v
+pytest tests/test_sanitizer.py -v
+pytest tests/test_metadata.py -v
+pytest tests/test_library.py -v
+```
+
+Las pruebas cubren:
+- **Sanitización & Encoding:** Slugs normalizados, remoción de caracteres no seguros para filesystem en Win/Linux/macOS y reparación de mojibake UTF-8.
+- **Extracción de Metadatos:** Extracción de hashes de posts Medium en URLs de subdominios, perfiles y limpieza de parámetros de telemetría (`utm_*`, `source`, `ref`, `gi`).
+- **Gestión de Biblioteca:** Persistencia y sincronización del índice central `.library_manifest.json`, deduplicación de artículos y verificación cruzada.
+- **Herramientas MCP:** Integración funcional de todas las herramientas (`medium_search_articles`, `medium_get_article`, `medium_get_stats`, `medium_export_archive`).
+
+La suite se ejecuta automáticamente en GitHub Actions en matrices de Python 3.10, 3.11, 3.12 y 3.13.
+
+---
+
+## 📄 Licencia
+
+Distribuido bajo la Licencia MIT. Consulta [`LICENSE`](LICENSE) para más información.
+
