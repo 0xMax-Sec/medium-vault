@@ -1,6 +1,6 @@
 # 📚 Medium Knowledge Base & Bug Bounty Archiver (MCP + Skill Edition)
 
-[![CI](https://github.com/max/mediumm/actions/workflows/ci.yml/badge.svg)](https://github.com/max/mediumm/actions)
+[![CI](https://github.com/MAXI8594/mediumm/actions/workflows/ci.yml/badge.svg)](https://github.com/MAXI8594/mediumm/actions)
 [![Python 3.10 | 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![Cloudflare Security Audited](https://img.shields.io/badge/security--audit-cloudflare%20verified-success.svg)](audits/mediumm-run-2/REPORT.md)
 [![Tests Passing](https://img.shields.io/badge/tests-22%2F22%20passed-brightgreen.svg)](tests/)
@@ -150,7 +150,7 @@ El proyecto fue sometido a una rigurosa auditoría de seguridad defensiva de 6 f
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/max/mediumm.git
+git clone https://github.com/MAXI8594/mediumm.git
 cd mediumm
 
 # 2. Crear entorno virtual
