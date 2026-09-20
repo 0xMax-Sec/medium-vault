@@ -1,7 +1,7 @@
-import os
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:

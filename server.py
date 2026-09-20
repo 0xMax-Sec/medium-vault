@@ -320,20 +320,20 @@ def medium_archive_url(url: str, topic: str = "general") -> str:
         )
 
     # Fetch through reader mirror
-    html_content, base_url = archiver.reader_client.fetch_article_html(clean_url)
+    html_content, _base_url = archiver.reader_client.fetch_article_html(clean_url)
     if not html_content:
         return f"Error: No se pudo obtener el contenido HTML para '{clean_url}' a través de los mirrors."
 
-    # Parse title & metadata from HTML
+    # Parse metadata
     soup = BeautifulSoup(html_content, "html.parser")
-    title = ""
+    title = "Untitled Article"
     h1_tag = soup.find("h1")
     if h1_tag:
         title = h1_tag.get_text(strip=True)
     elif soup.find("title"):
         title = soup.find("title").get_text(strip=True)
 
-    title = re.sub(r"\s*-\s*Freedium.*$", "", title, flags=re.I).strip()
+    title = re.sub(r"\s*-\s*Freedium.*$", "", title, flags=re.IGNORECASE).strip()
     title, _ = fix_mojibake(title)
     if not title:
         # Fallback to slug
@@ -341,7 +341,7 @@ def medium_archive_url(url: str, topic: str = "general") -> str:
         title = re.sub(r"-[a-f0-9]{8,16}$", "", slug).replace("-", " ").title()
 
     author = ""
-    author_elem = soup.find(attrs={"data-testid": "authorName"}) or soup.find(class_=re.compile(r"author", re.I))
+    author_elem = soup.find(attrs={"data-testid": "authorName"}) or soup.find(class_=re.compile(r"author", re.IGNORECASE))
     if author_elem:
         author = author_elem.get_text(strip=True)
     if not author or author.lower() in ["medium author", "unknown author", "freedium"]:
@@ -353,7 +353,7 @@ def medium_archive_url(url: str, topic: str = "general") -> str:
 
     # Date parsing
     pub_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    for date_cand in soup.find_all(["p", "time", "span"], class_=re.compile(r"(gray|date|time|published)", re.I)):
+    for date_cand in soup.find_all(["p", "time", "span"], class_=re.compile(r"(gray|date|time|published)", re.IGNORECASE)):
         dt_text = date_cand.get_text(strip=True)
         try:
             from datetime import datetime as dt_parser

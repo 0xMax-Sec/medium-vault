@@ -1,5 +1,3 @@
-import json
-import pytest
 import sys
 from pathlib import Path
 
@@ -7,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from medium_archiver import LibraryManager, ArchivedEntry, ArticleMetadata
+from medium_archiver import ArchivedEntry, ArticleMetadata, LibraryManager
 
 
 def test_library_manager_init_and_persist(tmp_path):

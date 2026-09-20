@@ -115,7 +115,7 @@ def is_safe_url(url: str) -> Tuple[bool, str]:
             return False, "Nombre de host ausente en la URL"
 
         lower_host = hostname.lower().strip(".")
-        if lower_host in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal"):
+        if lower_host in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "metadata.google.internal"):  # nosec B104
             return False, "Acceso a localhost/loopback o metadatos bloqueado por seguridad"
 
         # Check IP literal directly
