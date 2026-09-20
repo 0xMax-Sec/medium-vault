@@ -26,3 +26,7 @@ MediumScraper/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Graphify internal cache and root metadata
+graphify-out/cache/
+graphify-out/.graphify_root
