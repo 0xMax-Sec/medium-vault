@@ -1,4 +1,4 @@
-# 📚 Medium-Vault: Bug Bounty & Security Knowledge Base (MCP + Skill Edition)
+# 📚 Medium-Vault: Universal Medium Knowledge Base & Offline Archiver (MCP + AI Skill)
 
 [![CI](https://github.com/MAXI8594/medium-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/MAXI8594/medium-vault/actions)
 [![Python 3.10 | 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
@@ -7,8 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Protocol Ready](https://img.shields.io/badge/MCP-Standard%20stdio-purple.svg)](https://modelcontextprotocol.io/)
 
-> **Sistema universal de indexación, archivo offline, deduplicación y control de calidad de artículos de Medium enfocado en Bug Bounty, Pentesting y Ciberseguridad.**  
-> Diseñado para operar sin conexión a internet y sin latencia con **Model Context Protocol (MCP)**, **Obsidian**, pipelines de **RAG Local** y **Agentes de IA autónomos (Claude Code, Antigravity, Gemini CLI, Cursor, Windsurf y Open Code)**, descargando diagramas e infografías técnicas en alta resolución (HD).
+> **Sistema universal y agnóstico de indexación, archivo offline, deduplicación y control de calidad de artículos de Medium para cualquier área del conocimiento (Inteligencia Artificial, Programación, Ciencia, Tecnología, Ciberseguridad, Finanzas, etc.).**  
+> Diseñado para operar sin conexión a internet y sin latencia con **Model Context Protocol (MCP)**, **Obsidian**, pipelines de **RAG Local** y **Agentes de IA autónomos (Claude Code, Antigravity, Gemini CLI, Cursor, Windsurf y Open Code)**, descargando diagramas e infografías en alta resolución (HD).
 
 ---
 
@@ -25,10 +25,10 @@
   - [Open Code & Otros Harnesses](#4-open-code--otros-harnesses)
 - [🛠️ Catálogo de Herramientas MCP](#️-catálogo-de-herramientas-mcp)
 - [💻 Interfaz de Línea de Comandos (CLI)](#-interfaz-de-línea-de-comandos-cli)
-- [🔬 Metodología de Investigación en Bug Bounty](#-metodología-de-investigación-en-bug-bounty)
+- [🔬 Metodología de Investigación y Estudio](#-metodología-de-investigación-y-estudio)
 - [🧪 Pruebas Automatizadas](#-pruebas-automatizadas)
 - [🧠 Grafo de Arquitectura (Graphify)](#-grafo-de-arquitectura-graphify)
-- [📄 Licencia](#-licencia)
+- [📄 Licencia y Seguridad](#-licencia-y-seguridad)
 
 ---
 
@@ -36,10 +36,10 @@
 
 | Métrica | Valor Verificado |
 | :--- | :--- |
-| **Total de Artículos Indexados** | **1,275+ writeups únicos** (deduplicados y catalogados) |
+| **Total de Artículos Indexados** | **1,275+ artículos únicos** (deduplicados y catalogados) |
 | **Diagramas y Capturas Locales (HD)** | **6,306+ imágenes** descargadas localmente en alta resolución |
-| **Colecciones y Tópicos Activos** | 11 tópicos principales (`#bug-bounty`, `#hackerone`, `#client-side path traversal`, `#bugcrowd`, `#intigriti`, `#mass assignment`, `#vdp`, `#hackenproof`, `#llm bug bounty`, `#infosec-writeups`, `#security`) |
-| **Volumen de Almacenamiento Markdown** | **8.58 MB** (texto plano optimizado para ventanas de contexto) |
+| **Colecciones y Tópicos Activos** | Multi-tópico (`#artificial-intelligence`, `#python`, `#technology`, `#data-science`, `#security`, `#programming`, `#web-development`, `#general`) |
+| **Volumen de Almacenamiento Markdown** | **8.58 MB** (texto plano puro optimizado para ventanas de contexto) |
 | **Tasa de Defectos de Código / Mojibake** | **0.0%** (100% auditado y saneado para LLMs) |
 | **Vulnerabilidades Abiertas** | **0** (Auditoría Cloudflare superada con 0 hallazgos activos) |
 
@@ -48,7 +48,7 @@
 ## 🌟 Características Principales
 
 ### 1. 🔍 Descubrimiento Recursivo Mensual (2024–2026)
-Supera la estricta limitación de 10 elementos impuesta por los feeds RSS tradicionales de Medium. Implementa un motor de scraping estático y mensual recursivo (`MediumFeedDiscoverer.fetch_archive`) capaz de explorar mes por mes los archivos históricos de Medium y publicaciones asociadas (ej. `/archive/2026/08`, `/archive/2025/11`) para descubrir cientos de writeups técnicos.
+Supera la estricta limitación de 10 elementos impuesta por los feeds RSS tradicionales de Medium. Implementa un motor de scraping estático y mensual recursivo (`MediumFeedDiscoverer.fetch_archive`) capaz de explorar mes por mes los archivos históricos de Medium y publicaciones asociadas (ej. `/archive/2026/08`, `/archive/2025/11`) para descubrir cientos de artículos sobre cualquier tema.
 
 ### 2. 🛡️ Deduplicación Inteligente en 3 Niveles
 Evita descargas redundantes independientemente de que un autor republique el artículo con diferentes slugs o bajo múltiples tags:
@@ -58,13 +58,13 @@ Evita descargas redundantes independientemente de que un autor republique el art
 
 ### 3. 🧹 Motor de Auditoría y Calidad Markdown para LLMs (`--clean-markdown`)
 Diseñado para maximizar la legibilidad y minimizar el consumo de tokens en agentes de IA:
-* **Deduplicación de Shiki Dual-Theme:** Suprime los bloques de código idénticos generados por los visores web para temas claro/oscuro (`github-light` y `github-dark`), ahorrando más de **1.4 MB (~350,000 tokens)** de contexto.
-* **Inferencia Automática de Lenguaje:** Detecta y re-etiqueta automáticamente bloques de código: `bash` (comandos de terminal, herramientas de bug bounty como `nuclei`, `subfinder`, `httpx`), `http` (peticiones raw `GET/POST`), `json`, `sql`, `javascript`, `python` o texto limpio.
+* **Deduplicación de Shiki Dual-Theme:** Suprime los bloques de código idénticos generados por visores web para temas claro/oscuro (`github-light` y `github-dark`), ahorrando más de **1.4 MB (~350,000 tokens)** de contexto.
+* **Inferencia Automática de Lenguaje:** Detecta y re-etiqueta automáticamente bloques de código: `bash` (comandos de terminal, `curl`, `git`, `docker`), `http` (peticiones raw `GET/POST`), `json`, `sql`, `javascript`, `python` o texto limpio sin adornos espurios.
 * **Reparación Determinista de Mojibake:** Convierte secuencias UTF-8 corrompidas por encabezados HTTP mal configurados (`ISO-8859-1`) a sus caracteres tipográficos originales (`’`, `—`, `–`, `→`, acentos y emojis).
 
 ### 4. ⚡ Concurrencia y Resiliencia con Circuit Breaker
 * **Descarga Paralela:** Pool de hasta 10 hilos concurrentes vía `ThreadPoolExecutor`.
-* **Rotación Dinámica de Mirrors:** Conmuta entre espejos de lectura y aisla temporalmente dominios con errores de red o DNS mediante un patrón Circuit Breaker con backoff exponencial y jitter.
+* **Rotación Dinámica de Mirrors:** Conmuta entre espejos de lectura y aísla temporalmente dominios con errores de red o DNS mediante un patrón Circuit Breaker con backoff exponencial y jitter.
 * **Checkpointing Tolerante a Fallos:** Registra el progreso en `.download_state.json`, permitiendo interrumpir la ejecución (`Ctrl+C`) y reanudarla exactamente en el punto de interrupción.
 
 ### 5. 📦 Empaquetado Portable (`/archivefile`)
@@ -229,23 +229,23 @@ Cualquier cliente compatible con MCP stdio puede invocarlo apuntando el ejecutab
 
 | Herramienta | Parámetros | Descripción |
 | :--- | :--- | :--- |
-| `medium_search_articles` | `query` *(str, req)*<br>`topic` *(str, opt)*<br>`author` *(str, opt)*<br>`limit` *(int, def: 10)* | Busca en la base offline por palabra clave, CVE, payload, título o autor. Devuelve resúmenes compactos y hash ID. |
+| `medium_search_articles` | `query` *(str, req)*<br>`topic` *(str, opt)*<br>`author` *(str, opt)*<br>`limit` *(int, def: 10)* | Busca en la base offline por palabra clave, tecnología, título o autor. Devuelve resúmenes compactos y hash ID. |
 | `medium_get_article` | `identifier` *(str, req)* | Recupera el contenido íntegro en Markdown limpio, frontmatter YAML y enlaces a imágenes locales. |
 | `medium_get_stats` | *(Ninguno)* | Muestra métricas en tiempo real: número total de artículos, imágenes HD, distribución por temas y espacio. |
-| `medium_archive_url` | `url` *(str, req)*<br>`topic` *(str, def: 'bug-bounty')* | Descarga, sanea e indexa una URL específica de Medium bajo demanda con validación anti-SSRF. |
+| `medium_archive_url` | `url` *(str, req)*<br>`topic` *(str, def: 'general')* | Descarga, sanea e indexa una URL específica de Medium bajo demanda con validación anti-SSRF. |
 | `medium_export_archive` | `topic` *(str, opt)*<br>`output_zip_path` *(str, opt)* | Genera un paquete portable `.zip` con los artículos e imágenes HD dentro del directorio seguro `exports/`. |
 
 ---
 
 ## 💻 Interfaz de Línea de Comandos (CLI)
 
-El archivo [`medium_archiver.py`](medium_archiver.py) incluye un menú interactivo y flags de terminal:
+El archivo [`medium_archiver.py`](medium_archiver.py) incluye un menú interactivo y flags de terminal para cualquier tópico:
 
 ```bash
-# 1. Búsqueda instantánea en tu biblioteca offline
-python3 medium_archiver.py --search "IDOR"
-python3 medium_archiver.py --search "SSRF"
-python3 medium_archiver.py --search "Client-Side Path Traversal"
+# 1. Búsqueda instantánea en tu biblioteca offline sobre cualquier tema
+python3 medium_archiver.py --search "Transformers"
+python3 medium_archiver.py --search "FastAPI"
+python3 medium_archiver.py --search "Microservices"
 
 # 2. Consultar estadísticas de la base de conocimiento
 python3 medium_archiver.py --stats
@@ -257,49 +257,50 @@ python3 medium_archiver.py --audit
 python3 medium_archiver.py --clean-markdown
 
 # 5. Descubrir y listar artículos de un tópico sin descargar
-python3 medium_archiver.py --tag bug-bounty --list-only
+python3 medium_archiver.py --tag artificial-intelligence --list-only
 
 # 6. Descargar artículos concurrentemente (6 workers y confirmación automática)
-python3 medium_archiver.py --tag bug-bounty -c 6 -y
+python3 medium_archiver.py --tag artificial-intelligence -c 6 -y
+python3 medium_archiver.py --tag python -c 6 -y
 
 # 7. Descargar filtrando por rango de años específico
-python3 medium_archiver.py --tag bug-bounty --from-year 2025 --to-year 2026 -c 6 -y
+python3 medium_archiver.py --tag technology --from-year 2025 --to-year 2026 -c 6 -y
 
 # 8. Generar paquete zip portable (/archivefile)
 python3 medium_archiver.py --archive-file
 
 # 9. Empaquetar un tópico específico
-python3 medium_archiver.py --tag bug-bounty --archive-file /tmp/bug-bounty-knowledge.zip
+python3 medium_archiver.py --tag artificial-intelligence --archive-file /tmp/ai-vault.zip
 ```
 
 ---
 
-## 🔬 Metodología de Investigación en Bug Bounty
+## 🔬 Metodología de Investigación y Estudio
 
-Al operar sobre un target autorizado (HackerOne, Bugcrowd, YesWeHack, Intigriti):
+Al investigar tecnologías, arquitecturas o conceptos con un agente de IA:
 
 ```
-1. Reconocimiento y Detección de Tecnología
+1. Descubrimiento de Concepto o Problema
    │
-   ├─ Se identifica un vector técnico (ej. "Next.js Server Actions", "GraphQL CSRF", "SAML SSO")
+   ├─ Se identifica una necesidad técnica (ej. "RAG con HyDE", "FastAPI Concurrency", "Event-Driven")
    │
    ▼
-2. Búsqueda Local Zero-Latency (0 peticiones outbound)
+2. Búsqueda Local Zero-Latency (0 peticiones outbound a internet)
    │
-   ├─ Invocar `medium_search_articles(query="Next.js Server Actions", limit=5)`
+   ├─ Invocar `medium_search_articles(query="RAG HyDE", limit=5)`
    ├─ Evaluar autores, resúmenes técnicos y hashes devueltos
    │
    ▼
-3. Extracción Quirúrgica del Writeup
+3. Extracción Quirúrgica del Artículo
    │
    ├─ Invocar `medium_get_article(identifier="<hash_del_post>")`
-   ├─ Obtener payloads exactos, esquemas de requests HTTP y bypasses documentados
+   ├─ Obtener código fuente completo, esquemas de diseño y capturas locales HD
    │
    ▼
-4. Adaptación Ética y Reporte
+4. Síntesis e Implementación
    │
-   ├─ Validar la hipótesis dentro del scope permitido
-   └─ Documentar el hallazgo con evidencia técnica sólida citando la referencia
+   ├─ Aplicar la solución técnica en el proyecto con código limpio y sin latencia
+   └─ Conservar la referencia bibliográfica con YAML frontmatter estructurado
 ```
 
 ---

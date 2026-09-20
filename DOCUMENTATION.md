@@ -1,8 +1,8 @@
-# 📖 Especificación Técnica y Arquitectura del Sistema (Medium Knowledge Base)
+# 📖 Especificación Técnica y Arquitectura del Sistema (Medium-Vault)
 
 > **Documento de Ingeniería y Manual de Arquitectura Interna**  
-> Proyecto: `medium_archiver` & `medium-knowledge-base` MCP Server  
-> Fecha de actualización: 19 de Septiembre de 2026
+> Proyecto: `medium-vault` (`medium_archiver` & `medium-knowledge-base` MCP Server)  
+> Fecha de actualización: 20 de Septiembre de 2026
 
 ---
 
@@ -41,7 +41,7 @@ El ecosistema **Medium Knowledge Base** está compuesto por tres subsistemas pri
    - Clasificación sintáctica de bloques de código (`bash`, `http`, `json`, `sql`, `javascript`, `python`, `text`).
 3. **Capa de Exposición Multi-Harness (`server.py` & `SKILL.md`):**
    - Servidor MCP basado en el estándar `stdio` compatible con cualquier harness o IDE moderno.
-   - Acceso sin latencia de red a más de 1,275 writeups y 6,300 imágenes HD.
+   - Acceso sin latencia de red a miles de artículos técnicos, tutoriales, documentación y recursos con imágenes HD offline.
 
 ---
 
@@ -70,16 +70,12 @@ graph TD
     DedupFilter -->|No| QueueDownload["Agregar a Cola de Descargas"]
 ```
 
-### 2.2 Normalización de URLs y Alias de Seguridad
-`MediumFeedDiscoverer.normalize_topic()` implementa un diccionario de alias para mapear siglas comunes de bug bounty a sus tags oficiales en Medium:
+### 2.2 Normalización de Tópicos y Alias Multidominio
+`MediumFeedDiscoverer.resolve_topic_candidates()` implementa un catálogo de alias multidominio para mapear términos coloquiales y siglas a sus tags oficiales en Medium:
 
-- `cspt` $\to$ `client-side-path-traversal`
-- `idor` $\to$ `insecure-direct-object-reference`
-- `ssrf` $\to$ `server-side-request-forgery`
-- `rce` $\to$ `remote-code-execution`
-- `ato` $\to$ `account-takeover`
-- `xss` $\to$ `cross-site-scripting`
-- `csrf` $\to$ `cross-site-request-forgery`
+- **Inteligencia Artificial y ML:** `ai` $\to$ `artificial-intelligence`, `ml` $\to$ `machine-learning`, `llm` $\to$ `large-language-models`
+- **Desarrollo y Programación:** `js` $\to$ `javascript`, `ts` $\to$ `typescript`, `py` $\to$ `python`, `k8s` $\to$ `kubernetes`
+- **Ciberseguridad e Infraestructura:** `ssrf` $\to$ `server-side-request-forgery`, `idor` $\to$ `insecure-direct-object-reference`, `rce` $\to$ `remote-code-execution`
 
 ---
 
@@ -191,7 +187,7 @@ El servidor implementa el protocolo MCP estándar para dotar a los agentes de ca
   "tools": [
     {
       "name": "medium_search_articles",
-      "description": "Busca writeups offline por término clave, vulnerabilidad o autor.",
+      "description": "Busca artículos técnicos y publicaciones offline por término clave, tópico o autor.",
       "parameters": {
         "query": {"type": "string", "description": "Término de búsqueda"},
         "topic": {"type": "string", "description": "Filtrar por tópico opcional"},

@@ -836,14 +836,54 @@ class MediumFeedDiscoverer:
         )
 
     TOPIC_CLUSTERS: Dict[str, List[str]] = {
-        "bug-bounty": [
-            "bug-bounty",
-            "bugbounty",
-            "bugbounty-tips",
-            "bug-bounty-tips",
-            "bugbountytips",
-            "bug-hunting",
-            "infosec-writeups",
+        "ai": [
+            "ai",
+            "artificial-intelligence",
+            "machine-learning",
+            "deep-learning",
+            "llm",
+            "generative-ai",
+        ],
+        "machine-learning": [
+            "machine-learning",
+            "deep-learning",
+            "data-science",
+            "artificial-intelligence",
+            "ml",
+        ],
+        "programming": [
+            "programming",
+            "software-engineering",
+            "coding",
+            "web-development",
+            "software-development",
+        ],
+        "python": [
+            "python",
+            "python3",
+            "python-programming",
+            "django",
+            "fastapi",
+        ],
+        "javascript": [
+            "javascript",
+            "typescript",
+            "reactjs",
+            "nodejs",
+            "frontend",
+        ],
+        "technology": [
+            "technology",
+            "tech",
+            "devops",
+            "cloud-computing",
+            "software",
+        ],
+        "data-science": [
+            "data-science",
+            "data-analysis",
+            "big-data",
+            "data-engineering",
         ],
         "cybersecurity": [
             "cybersecurity",
@@ -851,15 +891,35 @@ class MediumFeedDiscoverer:
             "security",
             "ethical-hacking",
             "penetration-testing",
+            "bug-bounty",
         ],
-        "python": [
-            "python",
-            "python3",
-            "python-programming",
+        "bug-bounty": [
+            "bug-bounty",
+            "bugbounty",
+            "bugbounty-tips",
+            "bug-hunting",
+            "infosec-writeups",
         ],
     }
 
-    SECURITY_ALIASES: Dict[str, List[str]] = {
+    TOPIC_ALIASES: Dict[str, List[str]] = {
+        # Artificial Intelligence & Machine Learning
+        "ai": ["artificial-intelligence", "ai", "machine-learning", "deep-learning"],
+        "ml": ["machine-learning", "artificial-intelligence", "data-science"],
+        "llm": ["large-language-models", "llm", "generative-ai"],
+        "genai": ["generative-ai", "artificial-intelligence"],
+        "nlp": ["natural-language-processing", "nlp"],
+        "deep learning": ["deep-learning", "machine-learning", "neural-networks"],
+        # Programming & Web Development
+        "js": ["javascript", "js", "web-development"],
+        "ts": ["typescript", "javascript"],
+        "py": ["python", "python3"],
+        "react": ["reactjs", "react", "frontend"],
+        "vue": ["vuejs", "vue", "frontend"],
+        "k8s": ["kubernetes", "devops"],
+        "devops": ["devops", "cloud-computing", "ci-cd"],
+        "ds": ["data-science", "analytics"],
+        # Cybersecurity & Network
         "client-side path traversal": ["cspt", "client-side-path-traversal", "path-traversal"],
         "client-side-path-traversal": ["cspt", "client-side-path-traversal", "path-traversal"],
         "cspt": ["cspt", "client-side-path-traversal", "path-traversal"],
@@ -894,10 +954,11 @@ class MediumFeedDiscoverer:
         "race condition": ["race-condition", "race-conditions"],
         "2fa bypass": ["2fa", "mfa", "mfa-bypass", "authentication-bypass"],
     }
+    SECURITY_ALIASES = TOPIC_ALIASES
 
     @classmethod
     def resolve_topic_candidates(cls, topic: str) -> List[str]:
-        """Normalize topic to valid Medium tag slugs and cybersecurity acronym aliases."""
+        """Normalize topic to valid Medium tag slugs and acronym aliases across tech, AI, and security domains."""
         if not topic:
             return []
         raw = topic.strip().lower()
@@ -905,10 +966,10 @@ class MediumFeedDiscoverer:
         clean_slug = re.sub(r"[\s_]+", "-", slug)
 
         candidates = []
-        if raw in cls.SECURITY_ALIASES:
-            candidates.extend(cls.SECURITY_ALIASES[raw])
-        if clean_slug in cls.SECURITY_ALIASES:
-            for alias in cls.SECURITY_ALIASES[clean_slug]:
+        if raw in cls.TOPIC_ALIASES:
+            candidates.extend(cls.TOPIC_ALIASES[raw])
+        if clean_slug in cls.TOPIC_ALIASES:
+            for alias in cls.TOPIC_ALIASES[clean_slug]:
                 if alias not in candidates:
                     candidates.append(alias)
 
@@ -918,10 +979,27 @@ class MediumFeedDiscoverer:
         return candidates
 
     CLUSTER_PUBLICATIONS: Dict[str, List[str]] = {
+        "ai": [
+            "https://medium.com/feed/towards-artificial-intelligence",
+            "https://medium.com/feed/towards-data-science",
+        ],
+        "programming": [
+            "https://medium.com/feed/better-programming",
+            "https://medium.com/feed/levelup-programming",
+        ],
+        "python": [
+            "https://medium.com/feed/python-in-plain-english",
+        ],
+        "data-science": [
+            "https://medium.com/feed/towards-data-science",
+        ],
+        "technology": [
+            "https://medium.com/feed/one-zero",
+        ],
         "bug-bounty": [
             "https://infosecwriteups.com/feed",
             "https://medium.com/feed/bugbountywriteup",
-        ]
+        ],
     }
 
     @staticmethod
@@ -2035,7 +2113,7 @@ class MediumArchiver:
     ) -> List[Path]:
         """Execute the complete discovery and archiving workflow for a tag or publication."""
         is_pub = bool(publication)
-        target_name = publication.strip() if is_pub else (topic or "bug-bounty").strip()
+        target_name = publication.strip() if is_pub else (topic or "general").strip()
         sanitized_target = PathSanitizer.sanitize(target_name).lower()
         prefix = "pub:" if is_pub else "#"
 
@@ -2342,7 +2420,7 @@ def parse_arguments() -> argparse.Namespace:
         dest="tag",
         type=str,
         default=None,
-        help="Medium tag or topic to archive (e.g. security, python, bug-bounty).",
+        help="Medium tag or topic to archive (e.g. artificial-intelligence, python, technology, design).",
     )
     parser.add_argument(
         "-p",
@@ -2350,7 +2428,7 @@ def parse_arguments() -> argparse.Namespace:
         dest="publication",
         type=str,
         default=None,
-        help="Medium publication name or custom domain (e.g. infosec-writeups, bugbountywriteup).",
+        help="Medium publication name or custom domain (e.g. towards-data-science, better-programming).",
     )
     parser.add_argument(
         "-s",
@@ -2605,14 +2683,14 @@ def main() -> None:
         )
         if choice == "1":
             topic = Prompt.ask(
-                "Ingresa tema/tag de Medium (ej. [green]bug-bounty[/green], [green]security[/green])"
+                "Ingresa tema/tag de Medium (ej. [green]artificial-intelligence[/green], [green]technology[/green], [green]python[/green])"
             )
         elif choice == "2":
             publication = Prompt.ask(
-                "Ingresa nombre de la Publicación (ej. [green]infosec-writeups[/green], [green]bugbountywriteup[/green])"
+                "Ingresa nombre de la Publicación (ej. [green]towards-data-science[/green], [green]better-programming[/green])"
             )
         elif choice == "3":
-            query = Prompt.ask("Ingresa término a buscar en tu biblioteca (ej. [green]SSRF[/green], [green]2FA[/green])")
+            query = Prompt.ask("Ingresa término a buscar en tu biblioteca (ej. [green]Transformers[/green], [green]FastAPI[/green], [green]OAuth[/green])")
             results = archiver.library.search(query)
             archiver.library.render_search_results(query, results)
             sys.exit(0)

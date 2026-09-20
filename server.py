@@ -3,7 +3,8 @@
 server.py - Universal Model Context Protocol (MCP) Server for Medium Knowledge Base.
 
 Enables AI agents across Antigravity, Claude Code, Gemini CLI, Cursor, Codex,
-and Open Code to search, retrieve, archive, and export local bug bounty & security writeups.
+and Open Code to search, retrieve, archive, and export offline Medium articles,
+tutorials, and research across any domain.
 
 Usage:
     # Run with stdio transport (standard for MCP clients):
@@ -55,7 +56,7 @@ server = MCPServer(
     name="medium-knowledge-base",
     instructions=(
         "Universal knowledge base toolset for searching, reading, archiving, "
-        "and exporting offline Medium bug bounty writeups, CVE breakdowns, and security research."
+        "and exporting offline Medium articles, technical writeups, tutorials, and research across any domain."
     ),
 )
 
@@ -72,7 +73,7 @@ library: LibraryManager = archiver.library
 @server.tool(
     name="medium_search_articles",
     description=(
-        "Search offline local Medium knowledge base for writeups, techniques, CVEs, or topics. "
+        "Search offline local Medium knowledge base for articles, tutorials, writeups, or topics. "
         "Matches by title, author, topic, or keyword within the article content."
     ),
 )
@@ -86,8 +87,8 @@ def medium_search_articles(
     Search across all indexed Medium articles in the local knowledge base.
 
     Args:
-        query: Search term (e.g. 'IDOR', 'SSRF', 'GraphQL', 'CVE-2024', 'OAuth').
-        topic: Optional topic filter (e.g. 'bug-bounty', 'security').
+        query: Search term (e.g. 'LLM', 'FastAPI', 'Transformers', 'OAuth', 'Rust').
+        topic: Optional topic filter (e.g. 'ai', 'programming', 'technology', 'security').
         author: Optional author name filter.
         limit: Maximum results to return (default: 10, max: 50).
     """
@@ -265,13 +266,13 @@ def medium_get_stats() -> str:
         "Extracts full clean Markdown, saves HD images locally, and indexes it in the library."
     ),
 )
-def medium_archive_url(url: str, topic: str = "bug-bounty") -> str:
+def medium_archive_url(url: str, topic: str = "general") -> str:
     """
     Download and archive a specific article URL.
 
     Args:
-        url: Full Medium article URL (e.g. 'https://medium.com/@user/my-writeup-123456789abc').
-        topic: Topic folder name to store under (default: 'bug-bounty').
+        url: Full Medium article URL (e.g. 'https://medium.com/@user/my-article-123456789abc').
+        topic: Topic folder name to store under (default: 'general').
     """
     # SSRF & protocol validation
     safe, reason = is_safe_url(url)
@@ -279,9 +280,9 @@ def medium_archive_url(url: str, topic: str = "bug-bounty") -> str:
         return f"Error de seguridad: URL insegura o no permitida ({reason}): '{url}'"
 
     # Sanitize topic parameter to prevent path traversal
-    clean_topic = PathSanitizer.sanitize(topic) if topic else "bug-bounty"
+    clean_topic = PathSanitizer.sanitize(topic) if topic else "general"
     if not clean_topic:
-        clean_topic = "bug-bounty"
+        clean_topic = "general"
 
     topic_dir = (archiver.output_dir / clean_topic).resolve()
     try:
@@ -402,7 +403,7 @@ def medium_export_archive(topic: str = "", output_zip_path: str = "") -> str:
     Create a zip archive file of the knowledge base or topic.
 
     Args:
-        topic: Specific topic folder to export (e.g. 'bug-bounty'). Leave empty for entire library.
+        topic: Specific topic folder to export (e.g. 'ai', 'python', 'security'). Leave empty for entire library.
         output_zip_path: Optional destination zip file path within the exports directory.
     """
     library.load_or_rebuild()

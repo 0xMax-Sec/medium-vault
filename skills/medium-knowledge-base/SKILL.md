@@ -1,22 +1,21 @@
 ---
 name: medium-knowledge-base
-description: "Offline Medium bug bounty and cybersecurity writeup knowledge base. Use when hunting vulnerabilities, researching prior-art on bug classes (IDOR, SSRF, GraphQL, 2FA bypass, RCE, OAuth, Business Logic, CSPT), looking up CVEs, or archiving new writeups locally with HD images."
+description: "Universal & agnostic offline Medium knowledge base archiver and search engine. Use when researching technical topics (AI/LLM, software engineering, architecture, data science, cybersecurity, systems design), looking up tutorials or writeups, and archiving new articles locally with HD images."
 ---
 
-# Medium Bug Bounty & Security Knowledge Base (MCP + Skill)
+# Medium-Vault: Universal Knowledge Base & Archiver (MCP + Skill)
 
-Use this skill whenever you need real-world bug bounty writeups, exploitation methodologies, verified CVE breakdowns, or authorization bypass techniques from over **1,275+ categorized offline Medium articles** and **6,300+ local HD diagrams**.
+Use this skill whenever you need in-depth articles, tutorials, technical writeups, architecture blueprints, or research breakdowns from over **1,275+ categorized offline Medium articles** and **6,300+ local HD diagrams**, or when archiving new articles from Medium.
 
 ---
 
 ## 🎯 When to Use
 
-- **Vulnerability Hunting & Prior Art:** When analyzing a target technology (e.g., Jenkins, GraphQL, Next.js, Django, Spring Boot, Supabase, OAuth providers) or discovering an endpoint, query the local base first to find how other hunters exploited similar endpoints.
-- **Payload & Bypass Discovery:** When testing tricky filters (e.g., SSRF bypasses, WAF evasion, mXSS, blind file uploads, 2FA bypasses, CSPT / path traversal), lookup writeups containing concrete proof-of-concept requests and responses.
-- **Report Drafting & Severity Justification:** When writing reports for Bugcrowd, HackerOne, or YesWeHack, reference local writeups to articulate real-world business impact and CVSS score alignment.
-- **Saving New Research:** When discovering a valuable Medium article online, archive it locally with full offline assets and HD diagrams so it's permanently available.
-- **Auditing & Cleaning Markdown Quality:** When preparing articles for LLM consumption (Claude Code, Oz, Antigravity) without token waste or encoding corruption.
-- **Packaging & Sharing (/archivefile):** When you need to bundle or export the knowledge base into a zip file for backup or cross-workspace transfer.
+- **Technical Research & Prior Art:** When exploring libraries, frameworks, architectures, or methodologies (e.g. Transformers, LangChain, FastAPI, Kubernetes, React, System Design, OAuth, Distributed Systems), query the local knowledge base with zero latency.
+- **Deep-Dives & Tutorial Retrieval:** Retrieve complete, clean, offline Markdown representations of engineering guides, case studies, and post-mortems with local HD diagrams.
+- **Saving Online Research:** When discovering a valuable Medium article online, archive it locally on-demand with all inline images and diagrams downloaded in HD.
+- **Token-Optimized Markdown for LLMs:** Clean and audit articles for consumption by AI agents (Claude Code, Antigravity, Cursor, Windsurf) without token bloat, Shiki dual-theme duplication, or encoding corruption.
+- **Packaging & Portability (/archivefile):** Export knowledge collections or topic folders into standalone, portable zip archives for backups, team sharing, or syncing to Obsidian vaults.
 
 ---
 
@@ -28,21 +27,21 @@ When connected via MCP (`medium-knowledge-base`), use the following tools:
 
 | MCP Tool | Description | Example Arguments |
 | :--- | :--- | :--- |
-| `medium_search_articles` | Search indexed writeups by vulnerability, keyword, author, or topic (zero network latency). | `{"query": "GraphQL IDOR", "limit": 5}` |
+| `medium_search_articles` | Search indexed articles by keyword, technology, author, or topic (zero network latency). | `{"query": "Transformers Attention", "limit": 5}` |
 | `medium_get_article` | Retrieve full article markdown, YAML frontmatter, and code blocks. | `{"identifier": "36fb7ad6bc03"}` |
-| `medium_get_stats` | Inspect current count of articles, topics, and local HD images. | `{}` |
-| `medium_archive_url` | Download and bundle a single Medium writeup with local HD images. | `{"url": "https://medium.com/@...", "topic": "bug-bounty"}` |
-| `medium_export_archive` | Export knowledge base into a portable zip archive file (/archivefile). | `{"topic": "bug-bounty"}` |
+| `medium_get_stats` | Inspect current metrics: article count, topics, disk usage, and local HD images. | `{}` |
+| `medium_archive_url` | Download and bundle a single Medium article with local HD images. | `{"url": "https://medium.com/@...", "topic": "ai"}` |
+| `medium_export_archive` | Export knowledge base into a portable zip archive file (/archivefile). | `{"topic": "python"}` |
 
 ### 2. CLI Direct Execution
 
 If running directly in a terminal or when MCP is not attached:
 
 ```bash
-# 1. Search local writeups
-python3 medium_archiver.py --search "SSRF"
-python3 medium_archiver.py --search "Client-Side Path Traversal"
-python3 medium_archiver.py --search "Account Takeover"
+# 1. Search local articles across any topic
+python3 medium_archiver.py --search "FastAPI"
+python3 medium_archiver.py --search "Transformers"
+python3 medium_archiver.py --search "Architecture"
 
 # 2. View local library statistics & disk usage
 python3 medium_archiver.py --stats
@@ -54,7 +53,8 @@ python3 medium_archiver.py --audit
 python3 medium_archiver.py --clean-markdown
 
 # 5. Archive new topic batch with parallel workers (bypassing RSS 10 limit)
-python3 medium_archiver.py --tag bug-bounty -c 6 -y
+python3 medium_archiver.py --tag artificial-intelligence -c 6 -y
+python3 medium_archiver.py --tag python -c 6 -y
 
 # 6. Export knowledge base into a single zip file (/archivefile)
 python3 medium_archiver.py --archive-file
@@ -62,30 +62,30 @@ python3 medium_archiver.py --archive-file
 
 ---
 
-## 🔬 Standard Bug Bounty Research Workflow
+## 🔬 Universal AI Research & Study Workflow
 
 ```
-1. Reconnaissance / Surface Discovery
+1. Concept or Problem Discovery
    │
-   ├─ Target technology identified: e.g., "GraphQL /graphql" or "Django"
-   │
-   ▼
-2. Query Local Medium Knowledge Base (0 network overhead)
-   │
-   ├─ Call `medium_search_articles(query="GraphQL bypass", limit=5)`
-   ├─ Inspect returned excerpts, titles, and post hashes
+   ├─ Technology or problem identified: e.g., "Next.js Server Actions" or "Vector Databases"
    │
    ▼
-3. Retrieve Detailed Writeup
+2. Query Local Medium Knowledge Base (0 network latency / 0 external requests)
+   │
+   ├─ Call `medium_search_articles(query="Vector Databases", limit=5)`
+   ├─ Inspect returned excerpts, authors, topics, and post hashes
+   │
+   ▼
+3. Retrieve Complete In-Depth Article
    │
    ├─ Call `medium_get_article(identifier="<post_hash>")`
-   ├─ Extract exact HTTP request structures, parameter anomalies, and payloads
+   ├─ Extract exact code samples, architectural diagrams, and configuration patterns
    │
    ▼
-4. Test in Target Scope
+4. Synthesis & Implementation
    │
-   ├─ Adapt payloads to authorized target boundaries
-   └─ Document findings with reference to prior-art writeup
+   ├─ Apply patterns directly to current task or development project
+   └─ Reference authoritative sources and original research
 ```
 
 ---
