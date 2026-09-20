@@ -239,3 +239,78 @@ El repositorio se encuentra indexado en `graphify-out/`:
   - `GRAPH_TREE.html`: Árbol colapsable por jerarquías de componentes.
   - `mediumm-callflow.html`: Secuencias de llamadas e invocaciones entre clases.
   - `GRAPH_REPORT.md`: Auditoría de acoplamiento y god-nodes.
+
+---
+
+## 8. Arquitectura de Seguridad y Modelo de Hardening
+
+A raíz de la auditoría de seguridad realizada con el estándar **Cloudflare Security Audit Skill** (`security-audit-skill`), el sistema implementa un modelo de confianza cero para todas las entradas provistas por clientes MCP, agentes de IA y contenido remoto.
+
+### 8.1 Modelo de Amenazas en Entornos Agénticos
+En despliegues con LLMs (Claude Code, Cursor, Antigravity), el servidor MCP `server.py` recibe argumentos formulados por modelos que podrían ser manipulados mediante inyecciones de prompt indirectas o alucinaciones. Por ello, todas las operaciones de red y sistema de archivos están protegidas por compuertas deterministas previas a la ejecución:
+
+```
+[Cliente MCP / Agente LLM]
+             │
+             │ Invocación de herramientas (medium_archive_url / medium_export_archive)
+             ▼
+   ┌───────────────────────────────────────────┐
+   │       Compuerta de Validación 1           │
+   │       is_safe_url(url)                    │
+   │       • Esquemas: Solo http/https         │
+   │       • Bloqueo: 127.0.0.0/8, 0.0.0.0     │
+   │       • Metadatos: 169.254.169.254        │
+   │       • Privadas: RFC 1918 (10/8, 172/12) │
+   │       • Anti-DNS Rebinding (getaddrinfo)  │
+   └─────────────────────┬─────────────────────┘
+                         │ URL Validada
+                         ▼
+   ┌───────────────────────────────────────────┐
+   │       Compuerta de Validación 2           │
+   │       PathSanitizer & Confinamiento       │
+   │       • topic saneado sin '../'           │
+   │       • topic_dir.relative_to(output_dir) │
+   │       • output_zip dentro de exports/     │
+   │       • Sufijo forzoso: .zip              │
+   └─────────────────────┬─────────────────────┘
+                         │ I/O Seguro
+                         ▼
+   [Sistema de Archivos Confinado (knowledge_base/)]
+```
+
+### 8.2 Subsistema Anti-SSRF y Anti-DNS Rebinding (`is_safe_url`)
+Implementado en `medium_archiver.py:90-147`, se ejecuta antes de cualquier solicitud HTTP de fallback o descarga de imágenes:
+- **Validación de Esquema:** Acepta estrictamente `http` y `https`. Esquemas como `file://`, `gopher://`, `dict://` o `ftp://` son rechazados de inmediato.
+- **Lista Negra de Redes Prohibidas (`BLOCKED_IP_NETWORKS`):**
+  - Loopback (`127.0.0.0/8`, `::1/128`)
+  - Subredes privadas RFC 1918 (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`)
+  - Metadatos de proveedores cloud (`169.254.0.0/16`)
+  - Carrier-Grade NAT (`100.64.0.0/10`)
+  - Unique Local Addresses IPv6 (`fc00::/7`) y Link-Local (`fe80::/10`)
+- **Mitigación contra DNS Rebinding y Encodings Decimales/Hex:**
+  - El sistema resuelve el host de destino llamando a `socket.getaddrinfo(hostname, None)` antes de abrir la conexión HTTP.
+  - Si un host resuelve a una IP interna o si se utilizan notaciones decimales (ej. `2130706433` $\to$ `127.0.0.1`) o hexadecimales (`0x7f000001`), la petición es interceptada y abortada antes del socket.
+
+### 8.3 Confinamiento del Sistema de Archivos (`PathSanitizer`)
+- En `server.py` y `medium_archiver.py`, los nombres de carpetas (`topic`) pasan por `PathSanitizer.sanitize()`, eliminando caracteres reservados (`\x00-\x1f<>:"/\\|?*`) y secuencias de escape de directorio (`..`).
+- Se verifica en tiempo de ejecución que el objeto resuelto satisfaga `topic_dir.relative_to(archiver.output_dir.resolve())`.
+
+### 8.4 Delimitación Estricta de Exportaciones (`medium_export_archive`)
+- La herramienta `medium_export_archive` resuelve las rutas de exportación exclusivamente contra `exports_dir = (library.base_dir / "exports").resolve()`.
+- Cualquier ruta relativa con `../` o ruta absoluta fuera de `exports/` dispara una excepción `ValueError` y devuelve un error de seguridad estructurado sin tocar el disco.
+- Se impone la verificación de extensión `.zip` para evitar la creación de scripts ejecutables en el sistema.
+
+### 8.5 Control de Cuotas de Disco (Mitigación DoS)
+- Las descargas de imágenes en `DOMSanitizerAndAssetBundler.download_image` comprueban la cabecera `Content-Length` (máximo 25 MB) y leen en chunks de 64 KB, cortando la conexión si el stream sobrepasa la cuota.
+
+### 8.6 Verificación Continua con Pruebas de Regresión
+La suite automatizada incluye 22 pruebas unitarias y de integración que se ejecutan en CI en matrices de Python 3.10 a 3.13:
+```bash
+pytest tests/ -v
+```
+Las pruebas de seguridad cubren explícitamente:
+- `test_export_archive_path_traversal_blocked`: Bloqueo de rutas de escape relativas y absolutas en exportaciones.
+- `test_archive_url_ssrf_blocked`: Bloqueo de loopback, metadatos y subredes privadas en URLs.
+- `test_archive_url_topic_traversal_sanitized`: Saneamiento de parámetros `topic`.
+- `test_is_safe_url`: Validación exhaustiva de bypasses de SSRF.
+- `test_path_sanitizer_traversal`: Normalización de caracteres y secuencias `../`.

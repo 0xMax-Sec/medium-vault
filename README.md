@@ -1,51 +1,74 @@
 # 📚 Medium Knowledge Base & Bug Bounty Archiver (MCP + Skill Edition)
 
-> **Sistema universal de archivo, deduplicación, auditoría de calidad e indexación offline de artículos de Medium enfocado en Bug Bounty, Pentesting y Ciberseguridad.**  
-> Genera documentos Markdown estructurados con metadatos YAML compatibles con **Obsidian**, pipelines de **RAG Local** y **Agentes de IA (Oz, Claude Code, Antigravity, Open Code)**, descargando todas las imágenes e infografías en alta definición (HD).
+[![CI](https://github.com/max/mediumm/actions/workflows/ci.yml/badge.svg)](https://github.com/max/mediumm/actions)
+[![Python 3.10 | 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
+[![Cloudflare Security Audited](https://img.shields.io/badge/security--audit-cloudflare%20verified-success.svg)](audits/mediumm-run-2/REPORT.md)
+[![Tests Passing](https://img.shields.io/badge/tests-22%2F22%20passed-brightgreen.svg)](tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![MCP Protocol Ready](https://img.shields.io/badge/MCP-Standard%20stdio-purple.svg)](https://modelcontextprotocol.io/)
 
-Incluye integración nativa con el **Model Context Protocol (MCP)** mediante transporte `stdio` y una **Skill universal** para operar de forma transparente en **Antigravity, Claude Code, Gemini CLI, Cursor, Windsurf, Codex y Open Code**.
+> **Sistema universal de indexación, archivo offline, deduplicación y control de calidad de artículos de Medium enfocado en Bug Bounty, Pentesting y Ciberseguridad.**  
+> Diseñado para operar sin conexión a internet y sin latencia con **Model Context Protocol (MCP)**, **Obsidian**, pipelines de **RAG Local** y **Agentes de IA autónomos (Claude Code, Antigravity, Gemini CLI, Cursor, Windsurf y Open Code)**, descargando diagramas e infografías técnicas en alta resolución (HD).
 
 ---
 
-## 📊 Estado Actual de la Base de Conocimiento
+## 📑 Tabla de Contenidos
+- [📊 Estado de la Base de Conocimiento](#-estado-de-la-base-de-conocimiento)
+- [🌟 Características Principales](#-características-principales)
+- [🏗️ Arquitectura del Sistema](#️-arquitectura-del-sistema)
+- [🛡️ Auditoría de Seguridad & Hardening (Cloudflare Standard)](#️-auditoría-de-seguridad--hardening-cloudflare-standard)
+- [🚀 Instalación Rápida](#-instalación-rápida)
+- [🔌 Configuración de Servidor MCP](#-configuración-de-servidor-mcp)
+  - [Claude Code](#1-claude-code)
+  - [Google Antigravity & Gemini CLI](#2-google-antigravity--gemini-cli)
+  - [Cursor & Windsurf](#3-cursor--windsurf)
+  - [Open Code & Otros Harnesses](#4-open-code--otros-harnesses)
+- [🛠️ Catálogo de Herramientas MCP](#️-catálogo-de-herramientas-mcp)
+- [💻 Interfaz de Línea de Comandos (CLI)](#-interfaz-de-línea-de-comandos-cli)
+- [🔬 Metodología de Investigación en Bug Bounty](#-metodología-de-investigación-en-bug-bounty)
+- [🧪 Pruebas Automatizadas](#-pruebas-automatizadas)
+- [🧠 Grafo de Arquitectura (Graphify)](#-grafo-de-arquitectura-graphify)
+- [📄 Licencia](#-licencia)
 
-| Métrica | Valor Actual |
+---
+
+## 📊 Estado de la Base de Conocimiento
+
+| Métrica | Valor Verificado |
 | :--- | :--- |
-| **Total de Artículos Indexados** | **1,275+ writeups únicos** (deduplicados sin redundancia) |
-| **Diagramas y Capturas Locales (HD)** | **6,306 imágenes** guardadas localmente |
-| **Colecciones / Tópicos Activos** | 11 tópicos (`#bug-bounty`, `#hackerone`, `#client-side path traversal`, `#bugcrowd`, `#intigriti`, `#mass assignment`, `#vdp`, `#hackenproof`, `#llm bug bounty`, `#infosec-writeups`, `#security`) |
-| **Espacio Total en Markdown** | **8.58 MB** (texto plano puro optimizado) |
-| **Tasa de Defectos Markdown (Encoding / Código)** | **0.0%** (100% auditado y saneado) |
+| **Total de Artículos Indexados** | **1,275+ writeups únicos** (deduplicados y catalogados) |
+| **Diagramas y Capturas Locales (HD)** | **6,306+ imágenes** descargadas localmente en alta resolución |
+| **Colecciones y Tópicos Activos** | 11 tópicos principales (`#bug-bounty`, `#hackerone`, `#client-side path traversal`, `#bugcrowd`, `#intigriti`, `#mass assignment`, `#vdp`, `#hackenproof`, `#llm bug bounty`, `#infosec-writeups`, `#security`) |
+| **Volumen de Almacenamiento Markdown** | **8.58 MB** (texto plano optimizado para ventanas de contexto) |
+| **Tasa de Defectos de Código / Mojibake** | **0.0%** (100% auditado y saneado para LLMs) |
+| **Vulnerabilidades Abiertas** | **0** (Auditoría Cloudflare superada con 0 hallazgos activos) |
 
 ---
 
 ## 🌟 Características Principales
 
-### 1. 🔍 Descubrimiento Profundo de Archivo (2024–2026)
-Supera la restricción de 10 elementos impuesta por los feeds RSS tradicionales de Medium. Implementa un motor de scraping estático y mensual recursivo (`MediumFeedDiscoverer.fetch_archive_year_articles`) capaz de explorar mes a mes (ej. `/archive/2026/08`, `/archive/2025/11`) para descubrir cientos o miles de artículos históricos y recientes por tag o publicación.
+### 1. 🔍 Descubrimiento Recursivo Mensual (2024–2026)
+Supera la estricta limitación de 10 elementos impuesta por los feeds RSS tradicionales de Medium. Implementa un motor de scraping estático y mensual recursivo (`MediumFeedDiscoverer.fetch_archive`) capaz de explorar mes por mes los archivos históricos de Medium y publicaciones asociadas (ej. `/archive/2026/08`, `/archive/2025/11`) para descubrir cientos de writeups técnicos.
 
 ### 2. 🛡️ Deduplicación Inteligente en 3 Niveles
-Evita descargas redundantes incluso si un artículo se publica bajo múltiples tags (ej. `#bug-bounty` y `#cybersecurity`) o con URLs distintas:
-- **Nivel 1 (Hash del Post):** Extrae el identificador único hexadecimal de Medium (ej. `6059344032d4` de `slug-6059344032d4`).
-- **Nivel 2 (URL Canónica Limpia):** Normaliza y elimina parámetros de rastreo (`utm_*`, `source`, `sk`).
-- **Nivel 3 (Título Normalizado Fuzzy):** Compara el título en minúsculas sin signos de puntuación contra el índice central `.library_manifest.json`.
+Evita descargas redundantes independientemente de que un autor republique el artículo con diferentes slugs o bajo múltiples tags:
+* **Nivel 1 (Hash Criptográfico de Medium):** Identifica el token hexadecimal único del post (ej. `6059344032d4`).
+* **Nivel 2 (URL Canónica Saneada):** Normaliza el endpoint eliminando parámetros de telemetría y rastreo (`utm_*`, `source`, `ref`, `gi`, `sk`).
+* **Nivel 3 (Fuzzy Title Match):** Normaliza títulos en minúsculas y sin puntuación contra el índice central `.library_manifest.json`.
 
-### 3. 🧹 Motor de Auditoría y Limpieza de Calidad Markdown (`--audit` / `--clean-markdown`)
-Diseñado específicamente para optimizar el consumo de tokens y la precisión de lectura en LLMs y harnesses de IA:
-- **Deduplicación de Código Shiki:** Elimina los bloques duplicados idénticos generados por los mirrors de lectura en modo dual (`github-light` y `github-dark`), ahorrando más de **1.4 MB (~350,000 tokens)** de contexto.
-- **Inferencia Inteligente de Sintaxis:** Reemplaza etiquetas hardcodeadas por detección automática de lenguaje: `bash` (comandos de terminal, `curl`, `subfinder`, `git`), `http` (peticiones raw `GET/POST`), `json`, `sql`, `javascript`, `python` o texto limpio sin adornos espurios.
-- **Reparación Transparente de Mojibake:** Convierte secuencias UTF-8 corrompidas por encabezados `ISO-8859-1` de vuelta a sus caracteres originales (`’`, `—`, `–`, `→`, acentos en español, emojis como `☕`).
+### 3. 🧹 Motor de Auditoría y Calidad Markdown para LLMs (`--clean-markdown`)
+Diseñado para maximizar la legibilidad y minimizar el consumo de tokens en agentes de IA:
+* **Deduplicación de Shiki Dual-Theme:** Suprime los bloques de código idénticos generados por los visores web para temas claro/oscuro (`github-light` y `github-dark`), ahorrando más de **1.4 MB (~350,000 tokens)** de contexto.
+* **Inferencia Automática de Lenguaje:** Detecta y re-etiqueta automáticamente bloques de código: `bash` (comandos de terminal, herramientas de bug bounty como `nuclei`, `subfinder`, `httpx`), `http` (peticiones raw `GET/POST`), `json`, `sql`, `javascript`, `python` o texto limpio.
+* **Reparación Determinista de Mojibake:** Convierte secuencias UTF-8 corrompidas por encabezados HTTP mal configurados (`ISO-8859-1`) a sus caracteres tipográficos originales (`’`, `—`, `–`, `→`, acentos y emojis).
 
-### 4. ⚡ Descargas Concurrentes y Alta Resiliencia
-- **Pool de Concurrencia:** Descarga artículos e imágenes en paralelo con hasta 10 workers simultáneos vía `ThreadPoolExecutor`.
-- **Rotación de Mirrors & Circuit Breaker:** Conmuta automáticamente entre espejos de lectura (`freedium-mirror.cfd`, `freedium.cfd`) aislando temporalmente dominios caídos o con errores DNS/5xx.
-- **Checkpointing y Reanudación:** Mantiene el estado en `.download_state.json`, permitiendo pausar con `Ctrl+C` y reanudar la sesión exactamente donde se dejó.
+### 4. ⚡ Concurrencia y Resiliencia con Circuit Breaker
+* **Descarga Paralela:** Pool de hasta 10 hilos concurrentes vía `ThreadPoolExecutor`.
+* **Rotación Dinámica de Mirrors:** Conmuta entre espejos de lectura y aisla temporalmente dominios con errores de red o DNS mediante un patrón Circuit Breaker con backoff exponencial y jitter.
+* **Checkpointing Tolerante a Fallos:** Registra el progreso en `.download_state.json`, permitiendo interrumpir la ejecución (`Ctrl+C`) y reanudarla exactamente en el punto de interrupción.
 
 ### 5. 📦 Empaquetado Portable (`/archivefile`)
-Genera paquetes `.zip` listos para ser transportados a otros entornos, servidores o vaults de Obsidian, comprimiendo tanto los archivos `.md` como las carpetas locales de imágenes en HD.
-
-### 6. 🧠 Grafo de Arquitectura (Graphify)
-Mapeo visual del código con análisis AST, dependencias modulares, diagramas de flujo de llamadas y detección de comunidades en `graphify-out/`.
+Permite exportar colecciones enteras o tópicos específicos a un único archivo `.zip` portable, ideal para sincronización entre dispositivos o backups fríos.
 
 ---
 
@@ -53,10 +76,10 @@ Mapeo visual del código con análisis AST, dependencias modulares, diagramas de
 
 ```mermaid
 flowchart TD
-    CLI["CLI / Menú Interactivo"] --> Archiver["MediumArchiver (Coordinador)"]
+    CLI["CLI / Interactivo (medium_archiver.py)"] --> Archiver["MediumArchiver (Coordinador)"]
     MCP["Servidor MCP stdio (server.py)"] --> Archiver
     
-    subgraph Discovery ["1. Descubrimiento & Filtrado"]
+    subgraph Discovery ["1. Descubrimiento & Extracción"]
         Archiver --> Discoverer["MediumFeedDiscoverer"]
         Discoverer --> RSS["Feed RSS (Recientes)"]
         Discoverer --> Archive["Scraper Mensual 2024-2026"]
@@ -68,74 +91,97 @@ flowchart TD
         Manifest -.->|Hash / URL / Título| DedupDecision{"¿Ya existe?"}
     end
     
-    subgraph Fetch ["3. Extracción & Resiliencia"]
-        DedupDecision -->|No / Nuevo| Reader["WebReaderClient"]
-        Reader --> Mirrors["Mirror Rotation (Freedium / Fallbacks)"]
+    subgraph Fetch ["3. Descarga Resiliente & Seguridad"]
+        DedupDecision -->|No / Nuevo| SafeCheck["Filtro is_safe_url() (Anti-SSRF / Anti-Rebinding)"]
+        SafeCheck --> Reader["WebReaderClient"]
+        Reader --> Mirrors["Mirror Rotation + Circuit Breaker"]
         Reader --> StateMgr["DownloadStateManager (.download_state.json)"]
     end
     
     subgraph Sanitization ["4. Saneamiento & Bundle HD"]
         Reader --> Sanitizer["DOMSanitizerAndAssetBundler"]
         Sanitizer --> NoiseFilter["Eliminar Scripts, Ads y Shiki Dark"]
-        Sanitizer --> ImgWorker["Descarga Concurrente de Imágenes HD"]
+        Sanitizer --> ImgWorker["Descarga de Imágenes HD (Límite 25MB)"]
         Sanitizer --> MdEngine["markdownify + clean_markdown_document"]
     end
     
     subgraph Output ["5. Almacenamiento & Exposición"]
-        MdEngine --> KB["knowledge_base/<topic>/<article>/"]
+        MdEngine --> PathGate["Filtro PathSanitizer (Anti-Traversal)"]
+        PathGate --> KB["knowledge_base/<topic>/<article>/"]
         KB --> ArtMd["article.md (YAML Frontmatter)"]
         KB --> ImgDir["images/*.png"]
-        Archiver --> ZipExport["Exportador /archivefile (.zip)"]
+        Archiver --> ZipExport["Exportador /archivefile (Confinado a exports/)"]
     end
 ```
 
 ---
 
-## 📁 Estructura del Directorio
+## 🛡️ Auditoría de Seguridad & Hardening (Cloudflare Standard)
 
-```
-mediumm/
-├── knowledge_base/               # Base de conocimiento categorizada
-│   ├── bug-bounty/               # Artículos organizados por título
-│   │   └── <Título del Post>/
-│   │       ├── article.md        # Markdown limpio con frontmatter YAML
-│   │       └── images/           # Diagramas y capturas en resolución HD
-│   ├── hackerone/                # Artículos específicos de HackerOne
-│   ├── client-side path traversal/# Writeups de CSPT
-│   ├── .library_manifest.json    # Índice central (1,275+ entradas)
-│   └── exports/                  # Paquetes zip generados (/archivefile)
-├── skills/
-│   └── medium-knowledge-base/
-│       └── SKILL.md              # Definición de Skill para Agentes de IA
-├── graphify-out/                 # Visualizaciones y reporte arquitectónico
-│   ├── graph.html                # Visualizador interactivo D3
-│   ├── GRAPH_TREE.html           # Árbol colapsable interactivo
-│   ├── mediumm-callflow.html     # Diagramas de secuencia y flujos
-│   └── GRAPH_REPORT.md           # Análisis de comunidades y god-nodes
-├── medium_archiver.py            # Motor CLI de descarga, auditoría y deduplicación
-├── server.py                     # Servidor MCP stdio universal
-├── .mcp.json                     # Especificación de conexión estándar MCP
-└── requirements.txt              # Dependencias (requests, bs4, markdownify, rich, mcp)
+El proyecto fue sometido a una rigurosa auditoría de seguridad defensiva de 6 fases siguiendo el estándar oficial de **[Cloudflare Security Audit Skill](https://github.com/cloudflare/security-audit-skill)**:
+
+* **Reporte de Retest Oficial**: [`audits/mediumm-run-2/REPORT.md`](audits/mediumm-run-2/REPORT.md)
+* **Detalle Técnico de Mitigaciones**: [`audits/mediumm-run-2/FINDINGS-DETAIL.md`](audits/mediumm-run-2/FINDINGS-DETAIL.md)
+* **Validación de Esquema**: `PASS: 3 coverage units valid` y `PASS: 3 findings valid`.
+
+### Defensas Implementadas:
+1. **Protección Anti-SSRF y Anti-DNS Rebinding (`is_safe_url`)**:
+   - Valida el esquema (`http`/`https` exclusivamente).
+   - Bloquea explícitamente `localhost`, `127.0.0.1`, `0.0.0.0`, `::1`, `metadata.google.internal` e IP de metadatos de AWS/GCP/Azure (`169.254.169.254`).
+   - Bloquea todos los rangos privados RFC1918 (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), Carrier-Grade NAT (`100.64.0.0/10`) y ULA IPv6 (`fc00::/7`).
+   - Resuelve el nombre de host vía `socket.getaddrinfo` antes de cualquier conexión para neutralizar ataques de DNS rebinding y encodings alternativos (decimales como `http://2130706433/` o hexadecimales como `http://0x7f000001/`).
+2. **Confinamiento Estricto del Sistema de Archivos (`PathSanitizer`)**:
+   - Todas las rutas y parámetros `topic` son saneados suprimiendo separadores de directorio y secuencias de traversal (`../`, `..\`).
+   - Se valida el confinamiento mediante `is_relative_to(output_dir)` antes de crear carpetas o escribir archivos.
+3. **Restricción de Exportaciones (`medium_export_archive`)**:
+   - Las exportaciones ZIP están forzosamente confinadas dentro del subdirectorio seguro `knowledge_base/exports/`. Se valida que el destino termine en `.zip` y se rechaza cualquier intento de escape o sobreescritura de archivos arbitrarios del sistema.
+4. **Protección contra Agotamiento de Recursos (DoS)**:
+   - Descarga de imágenes limitada a un máximo de **25 MB** por archivo con corte automático de stream.
+
+---
+
+## 🚀 Instalación Rápida
+
+### Prerrequisitos
+* Python 3.10 o superior.
+* `git`
+
+### Paso a paso
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/max/mediumm.git
+cd mediumm
+
+# 2. Crear entorno virtual
+python3 -m venv .venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+
+# 3. Instalar dependencias
+pip install -r requirements.txt
+
+# 4. Verificar la suite de pruebas
+pytest tests/ -v
 ```
 
 ---
 
-## 🚀 Configuración Multi-Harness (MCP)
+## 🔌 Configuración de Servidor MCP
 
-El servidor MCP [`server.py`](file:///home/max/Projects/Bug-bounty/mediumm/server.py) expone herramientas a través de `stdio`, compatible con todos los clientes y plataformas:
+El servidor [`server.py`](server.py) implementa el protocolo MCP estándar a través del transporte `stdio`, permitiendo que cualquier agente de IA consulte la base de datos sin latencia.
 
 ### 1. Claude Code
-Añade el servidor ejecutando:
+Agrega el servidor directamente desde tu terminal:
 ```bash
-claude mcp add --transport stdio medium-knowledge-base -- /home/max/Projects/Bug-bounty/mediumm/.venv/bin/python /home/max/Projects/Bug-bounty/mediumm/server.py
+claude mcp add --transport stdio medium-knowledge-base -- /ruta/absoluta/a/mediumm/.venv/bin/python /ruta/absoluta/a/mediumm/server.py
 ```
-O coloca en el archivo `.mcp.json` de tu proyecto:
+O define en el archivo `.mcp.json` de tu proyecto:
 ```json
 {
   "mcpServers": {
     "medium-knowledge-base": {
-      "command": "/home/max/Projects/Bug-bounty/mediumm/.venv/bin/python",
-      "args": ["/home/max/Projects/Bug-bounty/mediumm/server.py"],
+      "command": "/ruta/absoluta/a/mediumm/.venv/bin/python",
+      "args": ["/ruta/absoluta/a/mediumm/server.py"],
       "env": {
         "PYTHONUNBUFFERED": "1"
       }
@@ -145,46 +191,55 @@ O coloca en el archivo `.mcp.json` de tu proyecto:
 ```
 
 ### 2. Google Antigravity & Gemini CLI
-Configurado en `~/.gemini/config/mcp_config.json`:
-```json
-"medium-knowledge-base": {
-  "command": "/home/max/Projects/Bug-bounty/mediumm/.venv/bin/python",
-  "args": ["/home/max/Projects/Bug-bounty/mediumm/server.py"],
-  "env": {
-    "PYTHONUNBUFFERED": "1",
-    "MEDIUM_KNOWLEDGE_BASE": "/home/max/Projects/Bug-bounty/mediumm/knowledge_base"
-  }
-}
-```
-
-### 3. Cursor & Windsurf
-En `~/.config/Cursor/User/globalStorage/cursor.mcp.json` o `.cursor/mcp.json`:
+Configura en tu archivo `~/.gemini/config/mcp_config.json`:
 ```json
 {
   "mcpServers": {
     "medium-knowledge-base": {
-      "command": "/home/max/Projects/Bug-bounty/mediumm/.venv/bin/python",
-      "args": ["/home/max/Projects/Bug-bounty/mediumm/server.py"]
+      "command": "/ruta/absoluta/a/mediumm/.venv/bin/python",
+      "args": ["/ruta/absoluta/a/mediumm/server.py"],
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "MEDIUM_KNOWLEDGE_BASE": "/ruta/absoluta/a/mediumm/knowledge_base"
+      }
     }
   }
 }
 ```
 
+### 3. Cursor & Windsurf
+En `.cursor/mcp.json` o `~/.config/Cursor/User/globalStorage/cursor.mcp.json`:
+```json
+{
+  "mcpServers": {
+    "medium-knowledge-base": {
+      "command": "/ruta/absoluta/a/mediumm/.venv/bin/python",
+      "args": ["/ruta/absoluta/a/mediumm/server.py"]
+    }
+  }
+}
+```
+
+### 4. Open Code & Otros Harnesses
+Cualquier cliente compatible con MCP stdio puede invocarlo apuntando el ejecutable de Python al archivo `server.py`.
+
 ---
 
-## 🛠️ Herramientas MCP Disponibles
+## 🛠️ Catálogo de Herramientas MCP
 
-| Herramienta MCP | Descripción | Argumentos |
+| Herramienta | Parámetros | Descripción |
 | :--- | :--- | :--- |
-| `medium_search_articles` | Búsqueda instantánea offline por título, autor, CVE, payload o texto del cuerpo. | `query` (str), `topic` (str, opcional), `limit` (int) |
-| `medium_get_article` | Devuelve el contenido íntegro en Markdown, frontmatter YAML y bloques de código. | `identifier` (hash de Medium, título o ruta) |
-| `medium_get_stats` | Métricas en tiempo real (artículos indexados, imágenes HD, megabytes en disco). | *(Ninguno)* |
-| `medium_archive_url` | Descarga, sanea y cataloga una URL individual de Medium bajo demanda. | `url` (str), `topic` (str, default: 'bug-bounty') |
-| `medium_export_archive` | Genera un archivo `.zip` comprimido de la base completa o de un tópico específico. | `topic` (str, opcional), `output_zip_path` (str, opcional) |
+| `medium_search_articles` | `query` *(str, req)*<br>`topic` *(str, opt)*<br>`author` *(str, opt)*<br>`limit` *(int, def: 10)* | Busca en la base offline por palabra clave, CVE, payload, título o autor. Devuelve resúmenes compactos y hash ID. |
+| `medium_get_article` | `identifier` *(str, req)* | Recupera el contenido íntegro en Markdown limpio, frontmatter YAML y enlaces a imágenes locales. |
+| `medium_get_stats` | *(Ninguno)* | Muestra métricas en tiempo real: número total de artículos, imágenes HD, distribución por temas y espacio. |
+| `medium_archive_url` | `url` *(str, req)*<br>`topic` *(str, def: 'bug-bounty')* | Descarga, sanea e indexa una URL específica de Medium bajo demanda con validación anti-SSRF. |
+| `medium_export_archive` | `topic` *(str, opt)*<br>`output_zip_path` *(str, opt)* | Genera un paquete portable `.zip` con los artículos e imágenes HD dentro del directorio seguro `exports/`. |
 
 ---
 
-## 💻 Uso desde la Línea de Comandos (CLI)
+## 💻 Interfaz de Línea de Comandos (CLI)
+
+El archivo [`medium_archiver.py`](medium_archiver.py) incluye un menú interactivo y flags de terminal:
 
 ```bash
 # 1. Búsqueda instantánea en tu biblioteca offline
@@ -192,107 +247,112 @@ python3 medium_archiver.py --search "IDOR"
 python3 medium_archiver.py --search "SSRF"
 python3 medium_archiver.py --search "Client-Side Path Traversal"
 
-# 2. Ver estadísticas y salud de la biblioteca
+# 2. Consultar estadísticas de la base de conocimiento
 python3 medium_archiver.py --stats
 
-# 3. Auditar calidad y legibilidad Markdown para LLMs (modo solo-lectura)
+# 3. Auditar la calidad del Markdown para LLMs (modo solo lectura)
 python3 medium_archiver.py --audit
 
-# 4. Limpiar y reparar en lote todos los artículos (deduplicación Shiki + UTF-8 + sintaxis)
+# 4. Limpiar y reparar en lote todos los artículos (Shiki + UTF-8 + Sintaxis)
 python3 medium_archiver.py --clean-markdown
 
-# 5. Descubrir y listar artículos sin descargar (modo seguro)
+# 5. Descubrir y listar artículos de un tópico sin descargar
 python3 medium_archiver.py --tag bug-bounty --list-only
 
-# 6. Descargar artículos nuevos en paralelo (con 6 workers y confirmación automática)
+# 6. Descargar artículos concurrentemente (6 workers y confirmación automática)
 python3 medium_archiver.py --tag bug-bounty -c 6 -y
 
-# 7. Descubrir con rango de años específico
+# 7. Descargar filtrando por rango de años específico
 python3 medium_archiver.py --tag bug-bounty --from-year 2025 --to-year 2026 -c 6 -y
 
-# 8. Generar paquete comprimido (.zip) de la base de conocimiento (/archivefile)
+# 8. Generar paquete zip portable (/archivefile)
 python3 medium_archiver.py --archive-file
 
-# 9. Empaquetar solo un tema específico
+# 9. Empaquetar un tópico específico
 python3 medium_archiver.py --tag bug-bounty --archive-file /tmp/bug-bounty-knowledge.zip
 ```
 
 ---
 
-## 🔬 Flujo de Trabajo en Bug Bounty (Research Workflow)
+## 🔬 Metodología de Investigación en Bug Bounty
 
-Cuando te enfrentes a un objetivo autorizado (HackerOne, Bugcrowd, YesWeHack, Intigriti):
+Al operar sobre un target autorizado (HackerOne, Bugcrowd, YesWeHack, Intigriti):
 
 ```
-1. Reconocimiento de Superficie
+1. Reconocimiento y Detección de Tecnología
    │
-   ├─ Se identifica tecnología o endpoint: ej. "GraphQL /graphql" o "Next.js Server Actions"
-   │
-   ▼
-2. Consulta Local sin Latencia (0 peticiones a internet)
-   │
-   ├─ Ejecutar `medium_search_articles(query="Next.js Server Actions", limit=5)`
-   ├─ Analizar títulos, autores y fragmentos clave devueltos
+   ├─ Se identifica un vector técnico (ej. "Next.js Server Actions", "GraphQL CSRF", "SAML SSO")
    │
    ▼
-3. Recuperación del Writeup Detallado
+2. Búsqueda Local Zero-Latency (0 peticiones outbound)
    │
-   ├─ Ejecutar `medium_get_article(identifier="<hash_del_post>")`
-   ├─ Extraer la estructura exacta de requests HTTP, nombres de parámetros y payloads
+   ├─ Invocar `medium_search_articles(query="Next.js Server Actions", limit=5)`
+   ├─ Evaluar autores, resúmenes técnicos y hashes devueltos
    │
    ▼
-4. Adaptación y Explotación Ética
+3. Extracción Quirúrgica del Writeup
    │
-   ├─ Probar en el alcance autorizado adaptando las variables observadas
-   └─ Redactar el reporte de impacto citando la metodología de referencia
-```
-
----
-
-## 🧠 Integración con Graphify
-
-El código está completamente analizado con `graphify` para auditar la salud arquitectónica:
-
-- **Grafo interactivo en navegador:** Abre [`graphify-out/graph.html`](file:///home/max/Projects/Bug-bounty/mediumm/graphify-out/graph.html) para explorar relaciones visuales entre módulos.
-- **Árbol colapsable interactivo:** Abre [`graphify-out/GRAPH_TREE.html`](file:///home/max/Projects/Bug-bounty/mediumm/graphify-out/GRAPH_TREE.html) para navegar la jerarquía de funciones y clases.
-- **Flujos de llamadas:** Abre [`graphify-out/mediumm-callflow.html`](file:///home/max/Projects/Bug-bounty/mediumm/graphify-out/mediumm-callflow.html) para inspeccionar diagramas de secuencia e interacciones.
-- **Reporte arquitectónico:** Consulta [`graphify-out/GRAPH_REPORT.md`](file:///home/max/Projects/Bug-bounty/mediumm/graphify-out/GRAPH_REPORT.md) para métricas de centralidad, hubs y comunidades identificadas.
-
-Para regenerar o actualizar el análisis tras modificaciones en el código:
-```bash
-graphify extract mediumm --code-only
-graphify cluster-only mediumm
-graphify tree --graph mediumm/graphify-out/graph.json --output mediumm/graphify-out/GRAPH_TREE.html
+   ├─ Invocar `medium_get_article(identifier="<hash_del_post>")`
+   ├─ Obtener payloads exactos, esquemas de requests HTTP y bypasses documentados
+   │
+   ▼
+4. Adaptación Ética y Reporte
+   │
+   ├─ Validar la hipótesis dentro del scope permitido
+   └─ Documentar el hallazgo con evidencia técnica sólida citando la referencia
 ```
 
 ---
 
-## 🧪 Suite de Pruebas Automatizadas
+## 🧪 Pruebas Automatizadas
 
-El repositorio cuenta con una suite completa de pruebas unitarias y de integración bajo `pytest`:
+La suite de pruebas automatizadas garantiza la estabilidad, la sanitización correcta y las garantías de seguridad del sistema:
 
 ```bash
-# Ejecutar toda la batería de pruebas
+# Ejecutar todas las pruebas con detalle
 pytest tests/ -v
-
-# Ejecutar módulos específicos
-pytest tests/test_mcp_server.py -v
-pytest tests/test_sanitizer.py -v
-pytest tests/test_metadata.py -v
-pytest tests/test_library.py -v
 ```
 
-Las pruebas cubren:
-- **Sanitización & Encoding:** Slugs normalizados, remoción de caracteres no seguros para filesystem en Win/Linux/macOS y reparación de mojibake UTF-8.
-- **Extracción de Metadatos:** Extracción de hashes de posts Medium en URLs de subdominios, perfiles y limpieza de parámetros de telemetría (`utm_*`, `source`, `ref`, `gi`).
-- **Gestión de Biblioteca:** Persistencia y sincronización del índice central `.library_manifest.json`, deduplicación de artículos y verificación cruzada.
-- **Herramientas MCP:** Integración funcional de todas las herramientas (`medium_search_articles`, `medium_get_article`, `medium_get_stats`, `medium_export_archive`).
-
-La suite se ejecuta automáticamente en GitHub Actions en matrices de Python 3.10, 3.11, 3.12 y 3.13.
+```
+============================== 22 passed in 7.27s ==============================
+tests/test_library.py::test_library_manager_init_and_persist PASSED
+tests/test_library.py::test_library_manager_check_archived PASSED
+tests/test_mcp_server.py::test_medium_search_articles PASSED
+tests/test_mcp_server.py::test_medium_get_article_by_hash PASSED
+tests/test_mcp_server.py::test_medium_get_article_by_title PASSED
+tests/test_mcp_server.py::test_medium_get_stats PASSED
+tests/test_mcp_server.py::test_medium_export_archive PASSED
+tests/test_mcp_server.py::test_export_archive_path_traversal_blocked PASSED
+tests/test_mcp_server.py::test_archive_url_ssrf_blocked PASSED
+tests/test_mcp_server.py::test_archive_url_topic_traversal_sanitized PASSED
+tests/test_metadata.py::test_article_metadata_dataclass PASSED
+tests/test_metadata.py::test_extract_post_hash_standard PASSED
+tests/test_metadata.py::test_extract_post_hash_subdomain PASSED
+tests/test_metadata.py::test_extract_post_hash_with_query_params PASSED
+tests/test_metadata.py::test_sanitize_url PASSED
+tests/test_sanitizer.py::test_slugify_basic PASSED
+tests/test_sanitizer.py::test_slugify_accents_and_special_chars PASSED
+tests/test_sanitizer.py::test_slugify_max_length PASSED
+tests/test_sanitizer.py::test_sanitize_filename PASSED
+tests/test_sanitizer.py::test_fix_mojibake PASSED
+tests/test_sanitizer.py::test_is_safe_url PASSED
+tests/test_sanitizer.py::test_path_sanitizer_traversal PASSED
+```
 
 ---
 
-## 📄 Licencia
+## 🧠 Grafo de Arquitectura (Graphify)
 
-Distribuido bajo la Licencia MIT. Consulta [`LICENSE`](LICENSE) para más información.
+El proyecto incluye mapeo arquitectónico generado con `graphify` para auditar la relación y acoplamiento entre módulos:
 
+* **Visualizador de Grafo D3**: Abre [`graphify-out/graph.html`](graphify-out/graph.html) en tu navegador.
+* **Árbol Colapsable de Clases y Métodos**: Abre [`graphify-out/GRAPH_TREE.html`](graphify-out/GRAPH_TREE.html).
+* **Flujo de Llamadas y Secuencia**: Abre [`graphify-out/mediumm-callflow.html`](graphify-out/mediumm-callflow.html).
+* **Reporte Arquitectónico**: Consulta [`graphify-out/GRAPH_REPORT.md`](graphify-out/GRAPH_REPORT.md).
+
+---
+
+## 📄 Licencia y Seguridad
+
+* **Licencia**: Distribuido bajo la [Licencia MIT](LICENSE).
+* **Política de Seguridad**: Consulta [`SECURITY.md`](SECURITY.md) para detalles sobre divulgación responsable y el modelo de confianza.
