@@ -1,6 +1,6 @@
-# 📚 Medium Knowledge Base & Bug Bounty Archiver (MCP + Skill Edition)
+# 📚 Medium-Vault: Bug Bounty & Security Knowledge Base (MCP + Skill Edition)
 
-[![CI](https://github.com/MAXI8594/mediumm/actions/workflows/ci.yml/badge.svg)](https://github.com/MAXI8594/mediumm/actions)
+[![CI](https://github.com/MAXI8594/medium-vault/actions/workflows/ci.yml/badge.svg)](https://github.com/MAXI8594/medium-vault/actions)
 [![Python 3.10 | 3.11 | 3.12 | 3.13](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue.svg)](https://www.python.org/)
 [![Cloudflare Security Audited](https://img.shields.io/badge/security--audit-cloudflare%20verified-success.svg)](audits/mediumm-run-2/REPORT.md)
 [![Tests Passing](https://img.shields.io/badge/tests-22%2F22%20passed-brightgreen.svg)](tests/)
@@ -150,8 +150,8 @@ El proyecto fue sometido a una rigurosa auditoría de seguridad defensiva de 6 f
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/MAXI8594/mediumm.git
-cd mediumm
+git clone https://github.com/MAXI8594/medium-vault.git
+cd medium-vault
 
 # 2. Crear entorno virtual
 python3 -m venv .venv
@@ -173,15 +173,15 @@ El servidor [`server.py`](server.py) implementa el protocolo MCP estándar a tra
 ### 1. Claude Code
 Agrega el servidor directamente desde tu terminal:
 ```bash
-claude mcp add --transport stdio medium-knowledge-base -- /ruta/absoluta/a/mediumm/.venv/bin/python /ruta/absoluta/a/mediumm/server.py
+claude mcp add --transport stdio medium-knowledge-base -- /ruta/absoluta/a/medium-vault/.venv/bin/python /ruta/absoluta/a/medium-vault/server.py
 ```
 O define en el archivo `.mcp.json` de tu proyecto:
 ```json
 {
   "mcpServers": {
     "medium-knowledge-base": {
-      "command": "/ruta/absoluta/a/mediumm/.venv/bin/python",
-      "args": ["/ruta/absoluta/a/mediumm/server.py"],
+      "command": "/ruta/absoluta/a/medium-vault/.venv/bin/python",
+      "args": ["/ruta/absoluta/a/medium-vault/server.py"],
       "env": {
         "PYTHONUNBUFFERED": "1"
       }
@@ -196,11 +196,11 @@ Configura en tu archivo `~/.gemini/config/mcp_config.json`:
 {
   "mcpServers": {
     "medium-knowledge-base": {
-      "command": "/ruta/absoluta/a/mediumm/.venv/bin/python",
-      "args": ["/ruta/absoluta/a/mediumm/server.py"],
+      "command": "/ruta/absoluta/a/medium-vault/.venv/bin/python",
+      "args": ["/ruta/absoluta/a/medium-vault/server.py"],
       "env": {
         "PYTHONUNBUFFERED": "1",
-        "MEDIUM_KNOWLEDGE_BASE": "/ruta/absoluta/a/mediumm/knowledge_base"
+        "MEDIUM_KNOWLEDGE_BASE": "/ruta/absoluta/a/medium-vault/knowledge_base"
       }
     }
   }
@@ -213,8 +213,8 @@ En `.cursor/mcp.json` o `~/.config/Cursor/User/globalStorage/cursor.mcp.json`:
 {
   "mcpServers": {
     "medium-knowledge-base": {
-      "command": "/ruta/absoluta/a/mediumm/.venv/bin/python",
-      "args": ["/ruta/absoluta/a/mediumm/server.py"]
+      "command": "/ruta/absoluta/a/medium-vault/.venv/bin/python",
+      "args": ["/ruta/absoluta/a/medium-vault/server.py"]
     }
   }
 }

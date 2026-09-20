@@ -11,7 +11,7 @@
 
 ## 2. Security Architecture & Threat Model
 
-`mediumm` operates as both an offline web knowledge base archiver and a **Model Context Protocol (MCP)** server. In an agentic environment, untrusted input may originate from:
+`medium-vault` operates as both an offline web knowledge base archiver and a **Model Context Protocol (MCP)** server. In an agentic environment, untrusted input may originate from:
 - AI agents executing autonomous actions based on LLM outputs or prompt-injected contexts.
 - Remote content fetched from syndicated feeds or reader mirrors.
 
@@ -67,10 +67,10 @@ The codebase has undergone a full 6-phase audit following the Cloudflare `securi
 
 ## 4. Reporting a Vulnerability
 
-If you discover a security vulnerability within `mediumm`, please adhere to responsible disclosure practices:
+If you discover a security vulnerability within `medium-vault`, please adhere to responsible disclosure practices:
 
 1. **Do not create a public GitHub issue.**
-2. Report the vulnerability via GitHub Private Security Advisory or send an email with the subject `[SECURITY] mediumm vulnerability report` containing:
+2. Report the vulnerability via GitHub Private Security Advisory or send an email with the subject `[SECURITY] medium-vault vulnerability report` containing:
    - Affected component (`server.py`, `medium_archiver.py`).
    - Proof of Concept (PoC) or reproduction steps.
    - Potential impact and affected threat boundary.
