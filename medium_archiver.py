@@ -111,8 +111,11 @@ MAX_ASSET_BYTES = 25 * 1024 * 1024  # 25 MB
 
 def is_safe_url(url: str) -> Tuple[bool, str]:
     """
-    Validates outbound URLs to prevent SSRF against loopback, private networks,
-    and cloud instance metadata endpoints (RFC 1918 / RFC 3927).
+    Validates outbound URLs against loopback, private networks, and cloud
+    instance metadata endpoints (RFC 1918 / RFC 3927) by resolving the host
+    and checking its IPs at check time.
+    Note: does not prevent DNS rebinding between this check and the actual
+    connect — see safe_get's note.
     """
     if not url:
         return False, "URL vacía"
@@ -153,6 +156,41 @@ def is_safe_url(url: str) -> Tuple[bool, str]:
         return True, "OK"
     except Exception as exc:
         return False, f"Error validando URL: {exc}"
+
+
+_MAX_REDIRECTS = 5
+
+
+class UnsafeURLError(requests.exceptions.RequestException):
+    """Raised when a URL (or a redirect target) fails the is_safe_url guard."""
+
+
+def safe_get(session, url, *, timeout, stream=False, headers=None):
+    """GET that re-validates every redirect hop through is_safe_url (anti-SSRF).
+
+    requests follows 3xx automatically without re-checking the target, so a
+    public URL that passes is_safe_url could redirect to an internal address.
+    We disable auto-redirects and validate each Location before following.
+
+    ponytail: does NOT close the DNS-rebinding TOCTOU — the host is re-resolved
+    by requests at connect time. Upgrade to an IP-pinning HTTPAdapter if that
+    threat is in scope.
+    """
+    current = url
+    for _ in range(_MAX_REDIRECTS + 1):
+        ok, reason = is_safe_url(current)
+        if not ok:
+            raise UnsafeURLError(f"blocked by is_safe_url: {reason} ({current})")
+        resp = session.get(
+            current, timeout=timeout, stream=stream,
+            headers=headers, allow_redirects=False,
+        )
+        if resp.is_redirect and resp.headers.get("Location"):
+            current = urljoin(current, resp.headers["Location"])
+            resp.close()
+            continue
+        return resp
+    raise UnsafeURLError(f"too many redirects (>{_MAX_REDIRECTS}) from {url}")
 
 
 @dataclass
@@ -1080,7 +1118,7 @@ class MediumFeedDiscoverer:
 
         for feed_url in feed_targets:
             try:
-                response = requests.get(feed_url, headers=headers, timeout=timeout)
+                response = safe_get(requests, feed_url, headers=headers, timeout=timeout)
                 if response.status_code != 200:
                     continue
                 parsed = feedparser.parse(response.content)
@@ -1159,7 +1197,7 @@ class MediumFeedDiscoverer:
         })
 
         try:
-            session.get("https://medium.com/", timeout=timeout)
+            safe_get(session, "https://medium.com/", timeout=timeout)
         except Exception:
             pass
 
@@ -1192,7 +1230,7 @@ class MediumFeedDiscoverer:
                     )
 
                     try:
-                        resp = session.get(archive_url, timeout=timeout)
+                        resp = safe_get(session, archive_url, timeout=timeout)
                         if resp.status_code == 200:
                             # 1. Parse __APOLLO_STATE__ from HTML
                             m = re.search(r'window\.__APOLLO_STATE__\s*=\s*(\{.*?\});', resp.text)
@@ -1545,8 +1583,8 @@ class WebReaderClient:
             for attempt in range(1, self.max_retries + 1):
                 try:
                     headers = self.get_headers()
-                    response = self.session.get(
-                        candidate_url, headers=headers, timeout=self.timeout
+                    response = safe_get(
+                        self.session, candidate_url, headers=headers, timeout=self.timeout
                     )
                     # Force UTF-8 encoding to prevent requests from defaulting to ISO-8859-1 for text/html
                     response.encoding = "utf-8"
@@ -1699,8 +1737,8 @@ class DOMSanitizerAndAssetBundler:
         }
 
         try:
-            res = self.session.get(
-                img_url, headers=headers, timeout=self.timeout, stream=True
+            res = safe_get(
+                self.session, img_url, headers=headers, timeout=self.timeout, stream=True
             )
             if res.status_code == 200:
                 # Detect proper extension from Content-Type if necessary

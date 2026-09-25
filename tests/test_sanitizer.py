@@ -96,3 +96,72 @@ def test_is_safe_url():
 def test_path_sanitizer_traversal():
     assert PathSanitizer.sanitize("../../evil/path") == "evilpath"
     assert PathSanitizer.sanitize("..\\..\\windows\\escape") == "windowsescape"
+
+
+class _StubResponse:
+    def __init__(self, is_redirect=False, headers=None, status_code=200):
+        self.is_redirect = is_redirect
+        self.headers = headers or {}
+        self.status_code = status_code
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
+class _StubSession:
+    """Records every URL requested via .get() (no real network)."""
+
+    def __init__(self, responses):
+        self.responses = list(responses)
+        self.requested_urls = []
+
+    def get(self, url, **kwargs):
+        self.requested_urls.append(url)
+        return self.responses.pop(0)
+
+
+def test_safe_get_blocks_redirect_to_internal_ip():
+    from medium_archiver import UnsafeURLError, safe_get
+
+    import pytest
+
+    session = _StubSession([
+        _StubResponse(is_redirect=True, headers={"Location": "http://169.254.169.254/"}, status_code=302),
+    ])
+
+    with pytest.raises(UnsafeURLError):
+        safe_get(session, "https://medium.com/@user/article", timeout=5)
+
+    # The internal URL must never have been fetched.
+    assert "http://169.254.169.254/" not in session.requested_urls
+
+
+def test_safe_get_follows_safe_redirect():
+    from medium_archiver import safe_get
+
+    session = _StubSession([
+        _StubResponse(is_redirect=True, headers={"Location": "https://medium.com/@other/article"}, status_code=302),
+        _StubResponse(is_redirect=False, headers={}, status_code=200),
+    ])
+
+    resp = safe_get(session, "https://medium.com/@user/article", timeout=5)
+
+    assert resp.status_code == 200
+    assert session.requested_urls == [
+        "https://medium.com/@user/article",
+        "https://medium.com/@other/article",
+    ]
+
+
+def test_safe_get_blocks_unsafe_initial_url():
+    from medium_archiver import UnsafeURLError, safe_get
+
+    import pytest
+
+    session = _StubSession([])
+
+    with pytest.raises(UnsafeURLError):
+        safe_get(session, "http://169.254.169.254/latest/meta-data/", timeout=5)
+
+    assert session.requested_urls == []
