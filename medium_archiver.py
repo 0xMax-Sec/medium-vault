@@ -109,13 +109,28 @@ TRACKING_PARAM_PREFIXES = ("utm_", "sk")
 MAX_ASSET_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
+def _blocked_network_for(ip_str: str):
+    """Return the blocked network an IP falls in, or None.
+
+    Single source of truth for the block rules, shared by is_safe_url (check
+    time) and _resolve_and_validate (connect-pinning time) so both apply
+    identical logic. Raises ValueError if ip_str is not a valid address.
+    """
+    ip_obj = ipaddress.ip_address(ip_str)
+    for net in BLOCKED_IP_NETWORKS:
+        if ip_obj in net:
+            return net
+    return None
+
+
 def is_safe_url(url: str) -> Tuple[bool, str]:
     """
     Validates outbound URLs against loopback, private networks, and cloud
     instance metadata endpoints (RFC 1918 / RFC 3927) by resolving the host
     and checking its IPs at check time.
-    Note: does not prevent DNS rebinding between this check and the actual
-    connect — see safe_get's note.
+    Note: on its own this only checks at *check* time. The actual DNS-rebinding
+    TOCTOU is closed in safe_get, which pins the connection to a validated IP
+    via _resolve_and_validate + PinnedHTTPAdapter.
     """
     if not url:
         return False, "URL vacía"
@@ -133,10 +148,8 @@ def is_safe_url(url: str) -> Tuple[bool, str]:
 
         # Check IP literal directly
         try:
-            ip_obj = ipaddress.ip_address(lower_host)
-            for net in BLOCKED_IP_NETWORKS:
-                if ip_obj in net:
-                    return False, f"Dirección IP privada o reservada bloqueada: {ip_obj}"
+            if _blocked_network_for(lower_host) is not None:
+                return False, f"Dirección IP privada o reservada bloqueada: {ipaddress.ip_address(lower_host)}"
         except ValueError:
             pass
 
@@ -145,10 +158,8 @@ def is_safe_url(url: str) -> Tuple[bool, str]:
             addr_info = socket.getaddrinfo(lower_host, None)
             for family, _, _, _, sockaddr in addr_info:
                 ip_str = sockaddr[0]
-                ip_obj = ipaddress.ip_address(ip_str)
-                for net in BLOCKED_IP_NETWORKS:
-                    if ip_obj in net:
-                        return False, f"El host '{hostname}' resuelve a una IP interna ({ip_obj})"
+                if _blocked_network_for(ip_str) is not None:
+                    return False, f"El host '{hostname}' resuelve a una IP interna ({ipaddress.ip_address(ip_str)})"
         except socket.gaierror:
             # Domain could not be resolved (will fail safely on fetch, not internal)
             pass
@@ -158,6 +169,108 @@ def is_safe_url(url: str) -> Tuple[bool, str]:
         return False, f"Error validando URL: {exc}"
 
 
+def _resolve_and_validate(url: str) -> Tuple[bool, str, Optional[str]]:
+    """Resolve url's host, validate EVERY resolved IP, and return one to pin.
+
+    This is the connect-time half of the anti-SSRF guard. It runs is_safe_url
+    (scheme / literal / loopback checks + resolved-IP block check), then resolves
+    the host itself and validates all returned addresses, returning ONE validated
+    IP for PinnedHTTPAdapter to bind the TCP connection to. Because the very IP we
+    validated is the IP we connect to, a low-TTL attacker cannot rebind the host
+    to an internal address between check and connect (issue #2 TOCTOU).
+
+    Returns (ok, reason, pinned_ip); pinned_ip is None whenever ok is False.
+    """
+    ok, reason = is_safe_url(url)
+    if not ok:
+        return False, reason, None
+
+    hostname = urlsplit(url.strip()).hostname
+    lower_host = hostname.lower().strip(".")
+
+    # IP literal: already validated by is_safe_url; pin straight to it.
+    try:
+        ipaddress.ip_address(lower_host)
+        return True, "OK", lower_host
+    except ValueError:
+        pass
+
+    try:
+        addr_info = socket.getaddrinfo(lower_host, None)
+    except socket.gaierror as exc:
+        # Cannot resolve => cannot pin => refuse. There is no validated public
+        # IP to rebind away from, so refusing here is the safe, complete choice.
+        return False, f"No se pudo resolver el host '{hostname}': {exc}", None
+
+    pinned_ip: Optional[str] = None
+    for _family, _type, _proto, _canon, sockaddr in addr_info:
+        ip_str = sockaddr[0]
+        if _blocked_network_for(ip_str) is not None:
+            return False, f"El host '{hostname}' resuelve a una IP interna ({ipaddress.ip_address(ip_str)})", None
+        if pinned_ip is None:
+            pinned_ip = ip_str
+
+    if pinned_ip is None:
+        return False, f"El host '{hostname}' no devolvió direcciones", None
+    return True, "OK", pinned_ip
+
+
+class PinnedHTTPAdapter(HTTPAdapter):
+    """HTTPAdapter that forces the TCP connection to a pre-validated IP while
+    keeping TLS bound to the ORIGINAL hostname.
+
+    Closes the DNS-rebinding TOCTOU (issue #2): _resolve_and_validate picks a
+    validated IP and this adapter connects there, instead of letting urllib3
+    re-resolve the hostname at connect time (which an attacker DNS could point
+    at an internal address).
+
+    Crucially it does NOT weaken TLS. Only the connection *host* (pool key) is
+    swapped for the IP; request.url is untouched, so:
+      - the SNI (server_hostname) and the certificate hostname assertion
+        (assert_hostname) stay set to the original hostname, and
+      - requests' own cert_verify(request.url, verify=True) still applies,
+    meaning the certificate is validated against the domain, never the IP.
+
+    Version note: targets the requests >=2.32 adapter API
+    (build_connection_pool_key_attributes) with urllib3 2.x pool kwargs
+    (server_hostname / assert_hostname). See requirements.txt (requests>=2.33).
+    """
+
+    def __init__(self, pinned_ip: str, **kwargs):
+        self._pinned_ip = pinned_ip
+        super().__init__(**kwargs)
+
+    def send(self, request, **kwargs):
+        # urllib3 derives the Host header from the connection host, which we pin
+        # to the IP. Set it explicitly to the original hostname so name-based
+        # virtual hosts (and CDNs) still route correctly. request.url is left
+        # untouched so SNI / cert verification keep using the hostname.
+        parsed = urlsplit(request.url)
+        host = parsed.hostname or ""
+        if ":" in host:  # IPv6 literal
+            host = f"[{host}]"
+        default_port = 443 if parsed.scheme.lower() == "https" else 80
+        if parsed.port is not None and parsed.port != default_port:
+            host = f"{host}:{parsed.port}"
+        request.headers["Host"] = host
+        return super().send(request, **kwargs)
+
+    def build_connection_pool_key_attributes(self, request, verify, cert=None):
+        host_params, pool_kwargs = super().build_connection_pool_key_attributes(
+            request, verify, cert
+        )
+        original_host = host_params["host"]
+        if host_params.get("scheme") == "https":
+            # SNI + cert hostname assertion stay pinned to the real domain, so
+            # certificate verification validates against the domain, not the IP.
+            pool_kwargs["server_hostname"] = original_host
+            pool_kwargs["assert_hostname"] = original_host
+        # TCP connects to the validated IP. Host header stays the domain because
+        # request.url is never rewritten.
+        host_params["host"] = self._pinned_ip
+        return host_params, pool_kwargs
+
+
 _MAX_REDIRECTS = 5
 
 
@@ -165,25 +278,64 @@ class UnsafeURLError(requests.exceptions.RequestException):
     """Raised when a URL (or a redirect target) fails the is_safe_url guard."""
 
 
+def _pinned_get(session, url, pinned_ip, *, timeout, stream, headers):
+    """Perform a single GET pinned to pinned_ip when using a real requests
+    transport; otherwise (test doubles / duck-typed sessions) pass through.
+
+    Real transports (a requests.Session or the requests module) are routed
+    through a per-request session carrying a PinnedHTTPAdapter, so the socket
+    only ever opens to the validated IP. The passed session's cookie jar,
+    headers and verify flag are shared so behaviour (cookies across hops, custom
+    headers, TLS verification) is preserved. The passed session's adapters are
+    never mutated, so concurrent callers sharing one session stay thread-safe.
+    """
+    is_real_session = isinstance(session, requests.Session)
+    if not is_real_session and session is not requests:
+        # Test stub / duck-typed session: no real socket, nothing to pin.
+        return session.get(
+            url, timeout=timeout, stream=stream,
+            headers=headers, allow_redirects=False,
+        )
+
+    pinned_session = requests.Session()
+    if is_real_session:
+        pinned_session.cookies = session.cookies
+        pinned_session.headers = session.headers
+        pinned_session.verify = session.verify
+    adapter = PinnedHTTPAdapter(pinned_ip)
+    pinned_session.mount("https://", adapter)
+    pinned_session.mount("http://", adapter)
+
+    resp = pinned_session.get(
+        url, timeout=timeout, stream=stream,
+        headers=headers, allow_redirects=False,
+    )
+    # Tie the throwaway session's lifetime to the response so a streamed body
+    # stays usable; it is released with the response (or on GC).
+    resp._pinned_session = pinned_session  # type: ignore[attr-defined]
+    return resp
+
+
 def safe_get(session, url, *, timeout, stream=False, headers=None):
-    """GET that re-validates every redirect hop through is_safe_url (anti-SSRF).
+    """GET that validates AND pins every hop to a validated IP (anti-SSRF).
 
-    requests follows 3xx automatically without re-checking the target, so a
-    public URL that passes is_safe_url could redirect to an internal address.
-    We disable auto-redirects and validate each Location before following.
-
-    ponytail: does NOT close the DNS-rebinding TOCTOU — the host is re-resolved
-    by requests at connect time. Upgrade to an IP-pinning HTTPAdapter if that
-    threat is in scope.
+    Two SSRF defenses combined:
+      1. Redirects are not auto-followed; each Location is re-validated before
+         it is fetched, so a public URL cannot bounce us to an internal one.
+      2. Each hop is resolved once via _resolve_and_validate and the connection
+         is pinned to that validated IP through PinnedHTTPAdapter, closing the
+         DNS-rebinding TOCTOU (requests can no longer re-resolve the host to an
+         internal IP at connect time).
+    stream / headers / timeout semantics are preserved.
     """
     current = url
     for _ in range(_MAX_REDIRECTS + 1):
-        ok, reason = is_safe_url(current)
+        ok, reason, pinned_ip = _resolve_and_validate(current)
         if not ok:
-            raise UnsafeURLError(f"blocked by is_safe_url: {reason} ({current})")
-        resp = session.get(
-            current, timeout=timeout, stream=stream,
-            headers=headers, allow_redirects=False,
+            raise UnsafeURLError(f"blocked by _resolve_and_validate: {reason} ({current})")
+        resp = _pinned_get(
+            session, current, pinned_ip,
+            timeout=timeout, stream=stream, headers=headers,
         )
         if resp.is_redirect and resp.headers.get("Location"):
             current = urljoin(current, resp.headers["Location"])
