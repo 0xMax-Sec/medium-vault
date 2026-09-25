@@ -53,7 +53,7 @@ Supera la estricta limitación de 10 elementos impuesta por los feeds RSS tradic
 ### 2. 🛡️ Deduplicación Inteligente en 3 Niveles
 Evita descargas redundantes independientemente de que un autor republique el artículo con diferentes slugs o bajo múltiples tags:
 * **Nivel 1 (Hash Criptográfico de Medium):** Identifica el token hexadecimal único del post (ej. `6059344032d4`).
-* **Nivel 2 (URL Canónica Saneada):** Normaliza el endpoint eliminando parámetros de telemetría y rastreo (`utm_*`, `source`, `ref`, `gi`, `sk`).
+* **Nivel 2 (URL Canónica Saneada):** Normaliza el endpoint eliminando parámetros de telemetría y rastreo (`utm_*`, `source`, `ref`, `gi`, `sk`, `responsesopen`).
 * **Nivel 3 (Fuzzy Title Match):** Normaliza títulos en minúsculas y sin puntuación contra el índice central `.library_manifest.json`.
 
 ### 3. 🧹 Motor de Auditoría y Calidad Markdown para LLMs (`--clean-markdown`)

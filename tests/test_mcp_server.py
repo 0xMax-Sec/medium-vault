@@ -1,3 +1,4 @@
+import ast
 import sys
 from pathlib import Path
 
@@ -123,6 +124,40 @@ def test_archive_url_ssrf_blocked():
     # Non-http scheme
     res = server.medium_archive_url("file:///etc/passwd")
     assert "Error de seguridad" in res
+
+
+def test_mcp_server_registers_exactly_the_five_documented_tools():
+    """Drift guard: if a tool is added, removed, or renamed in server.py,
+    this test fails. It pins only server.py's registered tool names — it does
+    not inspect any doc's contents; failing is the signal to review the docs
+    that describe this surface (README.md / SKILL.md / DOCUMENTATION.md / CLAUDE.md).
+
+    Derives the registered tool names by parsing server.py's source via ast,
+    rather than introspecting the live MCP server object, because server.py
+    has a compat shim (MCPServer in MCP 2.x, FastMCP fallback in 1.x) whose
+    registered-tool introspection APIs differ and are version-fragile.
+    """
+    tree = ast.parse((BASE_DIR / "server.py").read_text(encoding="utf-8"))
+    tool_names = set()
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "tool"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "server"
+        ):
+            for kw in node.keywords:
+                if kw.arg == "name" and isinstance(kw.value, ast.Constant):
+                    tool_names.add(kw.value.value)
+
+    assert tool_names == {
+        "medium_search_articles",
+        "medium_get_article",
+        "medium_get_stats",
+        "medium_archive_url",
+        "medium_export_archive",
+    }
 
 
 def test_archive_url_topic_traversal_sanitized():

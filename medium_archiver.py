@@ -98,6 +98,16 @@ BLOCKED_IP_NETWORKS = [
     ipaddress.ip_network("fe80::/10"),
 ]
 
+# Query-string params stripped from Medium URLs during canonicalization (dedup level 2).
+# Exact param names:
+TRACKING_PARAMS = frozenset({"source", "ref", "gi", "responsesopen"})
+# Prefix families — any param name starting with one of these is stripped:
+TRACKING_PARAM_PREFIXES = ("utm_", "sk")
+
+# Maximum bytes per downloaded image asset — DoS guard enforced in
+# DOMSanitizerAndAssetBundler.download_image (streamed, aborts past this).
+MAX_ASSET_BYTES = 25 * 1024 * 1024  # 25 MB
+
 
 def is_safe_url(url: str) -> Tuple[bool, str]:
     """
@@ -822,11 +832,7 @@ class MediumFeedDiscoverer:
         kept_params = []
         for k, v in parse_qsl(parsed.query, keep_blank_values=True):
             lower_k = k.lower()
-            if (
-                lower_k.startswith("utm_")
-                or lower_k in {"source", "ref", "gi", "responsesopen"}
-                or lower_k.startswith("sk")
-            ):
+            if lower_k.startswith(TRACKING_PARAM_PREFIXES) or lower_k in TRACKING_PARAMS:
                 continue
             kept_params.append((k, v))
 
@@ -1709,7 +1715,7 @@ class DOMSanitizerAndAssetBundler:
                 if ext and not dest_path.suffix:
                     dest_path = dest_path.with_suffix(ext)
 
-                max_bytes = 25 * 1024 * 1024  # 25 MB max per asset
+                max_bytes = MAX_ASSET_BYTES
                 downloaded = 0
                 with open(dest_path, "wb") as f:
                     for chunk in res.iter_content(chunk_size=16384):

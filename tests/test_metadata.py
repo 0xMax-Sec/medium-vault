@@ -5,7 +5,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from medium_archiver import ArticleMetadata, LibraryManager, MediumFeedDiscoverer
+from medium_archiver import (
+    TRACKING_PARAM_PREFIXES,
+    TRACKING_PARAMS,
+    ArticleMetadata,
+    LibraryManager,
+    MediumFeedDiscoverer,
+)
 
 
 def test_article_metadata_dataclass():
@@ -48,3 +54,29 @@ def test_sanitize_url():
     assert "source=rss" not in clean
     assert "ref=feed" not in clean
     assert clean == "https://medium.com/@user/post-123"
+
+
+def test_tracking_params_constant_is_pinned():
+    # Arrange / Act / Assert: fails if the stripped-param set drifts from docs
+    assert TRACKING_PARAMS == frozenset({"source", "ref", "gi", "responsesopen"})
+    assert TRACKING_PARAM_PREFIXES == ("utm_", "sk")
+
+
+def test_sanitize_url_strips_all_tracking_families_keeps_others():
+    # Arrange
+    raw_url = (
+        "https://medium.com/@u/post-abc?utm_source=x&sk=deadbeef&responsesopen=1"
+        "&gi=z&source=rss&ref=feed&page=2"
+    )
+
+    # Act
+    clean = MediumFeedDiscoverer.sanitize_url(raw_url)
+
+    # Assert
+    assert "utm_source" not in clean
+    assert "sk=" not in clean
+    assert "responsesopen" not in clean
+    assert "gi=" not in clean
+    assert "source=" not in clean
+    assert "ref=" not in clean
+    assert "page=2" in clean

@@ -6,7 +6,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
     sys.path.insert(0, str(BASE_DIR))
 
-from medium_archiver import PathSanitizer, fix_mojibake
+from medium_archiver import MAX_ASSET_BYTES, PathSanitizer, fix_mojibake
+
+
+def test_max_asset_bytes_dos_cap_is_pinned():
+    # Drift guard: the DoS cap is documented as 25 MB in CLAUDE.md/DOCUMENTATION.md.
+    # If this value changes, those docs must change with it.
+    assert MAX_ASSET_BYTES == 25 * 1024 * 1024
 
 
 def test_slugify_basic():

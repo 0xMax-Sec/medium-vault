@@ -89,7 +89,7 @@ flowchart TD
     HashExtract --> HashCheck{"¿Hash en entries?"}
     HashCheck -->|Coincide| Skip1["Omitir Descarga (Ya en Biblioteca)"]
     
-    HashCheck -->|No| URLSanitize["2. Saneamiento de URL (Eliminar utm_*, source, sk)"]
+    HashCheck -->|No| URLSanitize["2. Saneamiento de URL (Eliminar utm_*, source, ref, gi, sk, responsesopen)"]
     URLSanitize --> URLCheck{"¿URL Limpia en url_map?"}
     URLCheck -->|Coincide| Skip2["Omitir Descarga (Mismo recurso)"]
     
