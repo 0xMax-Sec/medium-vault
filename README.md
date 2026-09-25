@@ -6,6 +6,7 @@
 [![Tests Passing](https://img.shields.io/badge/tests-22%2F22%20passed-brightgreen.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Protocol Ready](https://img.shields.io/badge/MCP-Standard%20stdio-purple.svg)](https://modelcontextprotocol.io/)
+[![M8ven Score](https://m8ven.ai/badge/mcp/0xmax-sec-medium-vault-1xe2sz?v=3c89a9f09211fd8bd31c2020ed2f9212)](https://m8ven.ai/mcp/0xmax-sec-medium-vault-1xe2sz)
 
 > **Sistema universal y agnóstico de indexación, archivo offline, deduplicación y control de calidad de artículos de Medium para cualquier área del conocimiento (Inteligencia Artificial, Programación, Ciencia, Tecnología, Ciberseguridad, Finanzas, etc.).**  
 > Diseñado para operar sin conexión a internet y sin latencia con **Model Context Protocol (MCP)**, **Obsidian**, pipelines de **RAG Local** y **Agentes de IA autónomos (Claude Code, Antigravity, Gemini CLI, Cursor, Windsurf y Open Code)**, descargando diagramas e infografías en alta resolución (HD).
