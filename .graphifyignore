@@ -13,3 +13,6 @@ knowledge_base/**/images/
 *.svg
 .download_state.json
 *.tmp
+
+# Generated archify diagram artifacts (not source)
+medium-vault.architecture*

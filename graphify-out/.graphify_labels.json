@@ -1,1 +1,1 @@
-{"0": "LibraryManager", "1": "medium_archiver.py", "2": "Path", "3": "MediumFeedDiscoverer", "4": "WebReaderClient", "5": "DownloadStateManager", "6": "clean_markdown_document", "7": "medium_archive_url"}
+{"0": "Library Index & Dedup", "1": "MCP Server & Security", "2": "Archiver Coordinator & CLI", "3": "Markdown Cleaning & Assets", "4": "Path Sanitizing & Mojibake", "5": "Feed Discovery", "6": "Web Reader & Circuit Breaker", "7": "Download State & Resume", "8": "MCP Test Fixtures", "9": "Test Package Init"}
